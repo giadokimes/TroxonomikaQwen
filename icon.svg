@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0B0E13"/>
+  <rect x="56" y="176" width="400" height="160" rx="20" fill="#FFFFFF"/>
+  <rect x="56" y="176" width="88" height="160" rx="20" fill="#1E4FD8"/>
+  <rect x="124" y="176" width="20" height="160" fill="#1E4FD8"/>
+  <text x="100" y="242" font-family="Arial,sans-serif" font-size="34" font-weight="bold" fill="#FFD84D" text-anchor="middle">★</text>
+  <text x="100" y="300" font-family="Arial,sans-serif" font-size="34" font-weight="bold" fill="#FFFFFF" text-anchor="middle">GR</text>
+  <text x="300" y="282" font-family="Arial,sans-serif" font-size="72" font-weight="bold" fill="#0B0E13" text-anchor="middle" letter-spacing="4">ΑΒΕ</text>
+  <rect x="56" y="376" width="400" height="14" rx="7" fill="#2F6BFF"/>
+  <rect x="56" y="404" width="280" height="14" rx="7" fill="#22D3EE"/>
+  <rect x="56" y="432" width="160" height="14" rx="7" fill="#FFB020"/>
+</svg>
