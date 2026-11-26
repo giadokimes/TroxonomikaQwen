@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "Τροχονομικά — Διαχείριση Υποθέσεων",
+  "short_name": "Τροχονομικά",
+  "description": "Διαχείριση υποθέσεων αφαίρεσης διπλώματος — offline",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0B0E13",
+  "theme_color": "#0B0E13",
+  "lang": "el",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
