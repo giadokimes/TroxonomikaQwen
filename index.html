@@ -944,9 +944,7 @@ const OcrParser=(()=>{
   function findPlace(flat){
     const km=flat.match(/(\d{1,3})\s*\+\s*(\d{2,3})/)||flat.match(/(\d{1,3})\s+(\d{2,3})\s*χ\s*[\/ήη|]?\s*θ/i);
     if(!km)return null;
-    // Όρια λέξης: να μη ταιριάζει «ΑΜ» μέσα σε ΚΑΛΑΜΑΡΙΑΣ / ΑΜΕΣΑ κ.λπ.
     const roadRe=/(?<![Α-Ωα-ωA-Za-z])(Π\.?\s*Ε\.?\s*Ο\.?|Ε\.?\s*Ο\.?|Α\.?\s*Μ\.?|Θ\.?\s*Α\.?)(?![Α-Ωα-ωA-Za-z])/i;
-    // Αναζήτηση ΜΟΝΟ γύρω από τη χιλιομετρική θέση, όχι σε όλο το έγγραφο.
     const win=flat.slice(Math.max(0,km.index-40),Math.min(flat.length,km.index+160));
     const rm=win.match(roadRe);
     let road='',cities=[];
@@ -1004,18 +1002,20 @@ const OcrParser=(()=>{
     }
     return null;
   }
-  function findAddress(flat,oi){
+  // Διόρθωση: κρατάει ΤΟΝΟΥΣ από το orig (1:1 θέσεις με το flat) και δουλεύει και χωρίς ιδιοκτήτη.
+  function findAddress(flat,orig,oi){
     if(oi==null)return null;
-    const tail=flat.slice(oi,Math.min(flat.length,oi+400));
-    // «οδός» χωρίς τόνους = «οδος» (4 γράμματα) — καλύπτονται οδός/οδού/οδος/οδου.
-    const m=tail.match(/κατοικ[οσς]\s+([Α-Ω]{3,})[\s,]+(?:οδ(?:ος|ου)?\s+)?([^,.\n]{3,50}?)\s+(\d+[Α-Ω]?(?:\s*[-–]\s*\d+)?)/i);
-    if(m)return{city:cityOk(m[1])||m[1],street:m[2].trim(),number:m[3]};
-    const s=tail.match(/οδ(?:ος|ου)?\s+([^,.\n]{3,50}?)\s+(\d+[Α-Ω]?)/i);
-    if(s)return{city:null,street:s[1].trim(),number:s[2]};
+    const tailF=flat.slice(oi,Math.min(flat.length,oi+400));
+    const tailO=orig.slice(oi,Math.min(orig.length,oi+400));
+    const tone=s=>{const p=tailF.indexOf(s);return p>=0?tailO.slice(p,p+s.length):s;};
+    const m=tailF.match(/κατοικ[οσς]\s+([Α-Ω]{3,})[\s,]+(?:οδ(?:ος|ου)?\s+)?([^,.\n]{3,50}?)\s+(\d+[Α-Ω]?(?:\s*[-–]\s*\d+)?)/i);
+    if(m)return{city:cityOk(m[1])||m[1],street:tone(m[2].trim()),number:m[3]};
+    const s=tailF.match(/οδ(?:ος|ου)?\s+([^,.\n]{3,50}?)\s+(\d+[Α-Ω]?)/i);
+    if(s)return{city:null,street:tone(s[1].trim()),number:s[2]};
     return null;
   }
   function parseDocument(rawText){
-    const warnings=[],{flat}=prepare(rawText),f={};let m;
+    const warnings=[],{orig,flat}=prepare(rawText),f={};let m;
     f.plate=findPlate(flat);
     if(f.plate)warnings.push('Πινακίδα: '+f.plate+' — έλεγξε οπτικά από το έγγραφο.');
     else warnings.push('Πινακίδα: δεν βρέθηκε. Συμπλήρωσέ τη χειροκίνητα.');
@@ -1037,8 +1037,10 @@ const OcrParser=(()=>{
     f.article=findArticle(flat);
     if(!f.article)warnings.push('Άρθρο: δεν βρέθηκε.');
     const om=findOwner(flat);
-    if(om){f.ownerFull=om.name;f.address=findAddress(flat,om.index);warnings.push('Ονοματεπώνυμο: '+om.name+' — επιβεβαίωσε γράμμα προς γράμμα.');}
-    else{f.ownerFull=null;f.address=null;warnings.push('Ονοματεπώνυμο: δεν βρέθηκε.');}
+    const ai=om?om.index:(flat.indexOf('κατοικ')>=0?flat.indexOf('κατοικ'):0);
+    f.address=findAddress(flat,orig,ai);
+    if(om){f.ownerFull=om.name;warnings.push('Ονοματεπώνυμο: '+om.name+' — επιβεβαίωσε γράμμα προς γράμμα.');}
+    else{f.ownerFull=null;warnings.push('Ονοματεπώνυμο: δεν βρέθηκε.');}
     const removal=/αφαιρεση\s+της\s+αδειας\s+ικανοτητας/i.test(flat)||/αφαιρεση\s+αδειας\s+οδηγησης/i.test(flat)||/αφαιρεση[^.]{0,60}αδειας/i.test(flat);
     f.removal={required:removal,days:removal?parseDays(flat,warnings):null,circulation:/αφαιρεση[^.]{0,200}?(πινακιδ|αδειας\s+κυκλοφοριας)/i.test(flat)};
     if(removal&&!f.removal.days)warnings.push('Ημέρες αφαίρεσης: δεν βρέθηκαν.');
