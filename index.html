@@ -12,8 +12,9 @@
   --asphalt:#0B0E13; --surface:#141922; --card:#171E29; --raise:#1E2735;
   --line:#26303F; --line2:#33405273; --ink:#EAF0F8; --mut:#93A3B8; --dim:#5F7189;
   --patrol:#2F6BFF; --patrol2:#6FA0FF; --amber:#FFB020; --red:#FF4D4F;
-  --green:#19D46A; --cyan:#22D3EE; --magenta:#FF3D9A;
-  --warnbg:rgba(255,176,32,.13); --badbg:rgba(255,77,79,.13); --okbg:rgba(25,212,106,.13); --infobg:rgba(47,107,255,.14);
+  --green:#19D46A; --cyan:#22D3EE; --magenta:#FF3D9A; --violet:#9B7BFF;
+  --warnbg:rgba(255,176,32,.13); --badbg:rgba(255,77,79,.13); --okbg:rgba(25,212,106,.13);
+  --infobg:rgba(47,107,255,.14); --magbg:rgba(255,61,154,.14); --viobg:rgba(155,123,255,.14);
   --r:14px; --nav-h:64px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -22,6 +23,7 @@ body{margin:0;background:var(--asphalt);color:var(--ink);font:15px/1.45 system-u
   padding-bottom:calc(var(--nav-h) + 28px + env(safe-area-inset-bottom));min-height:100vh;
   background-image:radial-gradient(900px 420px at 85% -10%,rgba(47,107,255,.10),transparent 60%),radial-gradient(700px 380px at -10% 110%,rgba(34,211,238,.06),transparent 60%);
   background-attachment:fixed}
+body.selmode{padding-bottom:calc(var(--nav-h) + 96px + env(safe-area-inset-bottom))}
 ::selection{background:var(--patrol);color:#fff}
 *{scrollbar-width:thin;scrollbar-color:var(--patrol) var(--surface)}
 ::-webkit-scrollbar{width:9px;height:9px}
@@ -51,19 +53,22 @@ header h1{flex:1;margin:0;font-size:21px;font-weight:750;letter-spacing:-.01em;m
 main{max-width:780px;margin:0 auto;padding:6px 14px 0}
 .view[hidden]{display:none}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes slidein{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
 .view{animation:rise .28s cubic-bezier(.2,.7,.3,1)}
+#view-case{animation:slidein .26s cubic-bezier(.2,.7,.3,1)}
 
 .gh{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:20px 2px 8px;color:var(--mut);font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;text-align:left}
 .gh b{color:var(--ink)} .gh.bad{color:var(--red)} .gh.warn{color:var(--amber)} .gh.info{color:var(--cyan)}
 .gh .gc{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600;font-size:12.5px}
 
-.rc{position:relative;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 8px 12px 16px;margin-bottom:8px;min-height:70px;overflow:hidden;transition:transform .12s,border-color .12s}
+.rc{position:relative;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 8px 12px 16px;margin-bottom:8px;min-height:70px;overflow:hidden;transition:transform .12s,border-color .12s,background .12s}
 .rc:active{transform:scale(.985)}
 .rc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line)}
 .rc.u::before{background:var(--amber)} .rc.o::before{background:var(--red)}
 .rc.o{background:linear-gradient(90deg,rgba(255,77,79,.09),var(--card) 55%)}
 @keyframes pulse{50%{opacity:.55}}
 .rc.o::before{animation:pulse 2.2s infinite}
+.rc.sel{border-color:var(--cyan);background:linear-gradient(90deg,rgba(34,211,238,.12),var(--card) 60%)}
 .rc-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .rc-t{display:flex;align-items:center;gap:9px;min-width:0}
 .rc-t .nm{font-size:13.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -77,6 +82,8 @@ main{max-width:780px;margin:0 auto;padding:6px 14px 0}
 .rc.o .rc-p i{background:var(--red)} .rc.u .rc-p i{background:var(--amber)}
 .rc-call{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--raise);color:var(--green);text-decoration:none}
 .rc-chev{flex:none;color:var(--dim);width:18px;display:grid;place-items:center}
+.rc-box{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid var(--line2);display:grid;place-items:center;color:var(--asphalt);font-size:15px;font-weight:900;background:transparent}
+.rc.sel .rc-box{background:var(--cyan);border-color:var(--cyan)}
 
 .plate{display:inline-flex;align-items:stretch;border-radius:6px;overflow:hidden;border:1px solid #0B2A6B;box-shadow:0 2px 8px rgba(0,0,0,.45);flex:none;background:#fff}
 .plate .eu{background:linear-gradient(180deg,#1E4FD8,#123A9E);color:#FFD84D;font-size:8px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px 4px}
@@ -109,6 +116,22 @@ main{max-width:780px;margin:0 auto;padding:6px 14px 0}
 .fsel{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 11px;min-height:52px;text-align:left;min-width:0}
 .fsel small{font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .fsel span{font-size:13px;font-weight:650;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toolrow{display:flex;gap:8px;align-items:center}
+.toolrow .btn{flex:1}
+.views{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px}
+.views:empty{display:none}
+.vchip{flex:none;display:flex;align-items:center;gap:4px;background:var(--raise);border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px;font-size:12px;font-weight:700;color:var(--mut);cursor:grab}
+.vchip.on{background:linear-gradient(135deg,var(--violet),#5B3FBF);border-color:transparent;color:#fff}
+.vchip.drag{opacity:.4}
+.vchip.over{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(34,211,238,.3)}
+.vchip .mv{background:none;border:0;color:inherit;opacity:.6;padding:0 2px;font-size:12px}
+.vchip .del{background:none;border:0;color:inherit;opacity:.65;padding:0 4px;font-size:14px}
+.vchip .lbl{background:none;border:0;color:inherit;font-weight:700;font-size:12px;padding:0}
+
+.bulkbar{position:fixed;left:12px;right:12px;bottom:calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));z-index:70;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#16202C,#1B2735);border:1px solid var(--cyan);border-radius:14px;padding:9px 10px;box-shadow:0 12px 34px rgba(0,0,0,.65);animation:rise .2s}
+.bulkbar[hidden]{display:none}
+.bulkbar b{font-size:13px;color:var(--cyan);flex:none;padding-left:4px}
+.bulkbar .btn{min-height:38px;font-size:12.5px;padding:7px 12px;flex:1}
 
 .d-hd{display:flex;flex-direction:column;gap:8px;padding:10px 0 12px}
 .d-nm{font-size:18px;font-weight:600}
@@ -190,7 +213,6 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
 .invrow label{font-size:10.5px}
 .invrow input,.invrow select{padding:7px 9px;font-size:13px}
 
-/* ===== Προτάσεις καταλόγου ===== */
 .sug{margin-top:8px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--surface),var(--asphalt));overflow:hidden}
 .sug[hidden]{display:none}
 .sug-h{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--dim)}
@@ -199,27 +221,35 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
 .chips{display:flex;gap:6px;overflow-x:auto;padding:8px 10px;border-bottom:1px solid var(--line)}
 .chips button{flex:none;background:var(--raise);border:1px solid var(--line);color:var(--mut);border-radius:999px;padding:5px 11px;font-size:11.5px;font-weight:700;white-space:nowrap}
 .chips button.on{background:linear-gradient(135deg,var(--patrol),#1E3FA8);border-color:transparent;color:#fff}
-.sug-l{max-height:250px;overflow:auto}
+.chips button i{font-style:normal;opacity:.65;margin-left:4px}
+.sug-l{max-height:264px;overflow:auto}
 .sug-i{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:9px 11px;color:var(--ink)}
 .sug-i:last-child{border-bottom:0}
 .sug-i:active{background:var(--infobg)}
 .sug-i .t{display:flex;align-items:baseline;gap:8px}
 .sug-i .t b{font-size:13.5px;font-weight:650;flex:1;min-width:0;line-height:1.3}
 .sug-i .art{flex:none;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;font-weight:800;color:var(--amber);background:var(--warnbg);border-radius:6px;padding:2px 7px}
-.sug-i .m{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;font-size:10.5px;color:var(--dim)}
-.sug-i .m i{font-style:normal;background:var(--raise);border-radius:5px;padding:1px 6px}
-.sug-i .m i.cat{color:var(--cyan)}
-.sug-i .m i.fine{color:var(--green)}
-.sug-i .m i.susp{color:var(--mut)}
-.sug-i .ad{font-size:11px;color:var(--mut);margin-top:3px}
-.sug-e{padding:12px;font-size:12.5px;color:var(--dim);text-align:center}
-.sug-n{padding:7px 11px;font-size:10.5px;color:var(--dim);border-top:1px solid var(--line);background:rgba(255,176,32,.05)}
+.sug-i .m{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;font-size:10px}
+.sug-i .m i{font-style:normal;background:var(--raise);border-radius:5px;padding:2px 6px;color:var(--dim);font-weight:700}
+.sug-i .m i.cat{color:var(--cyan);background:var(--infobg)}
+.sug-i .m i.fine{color:var(--green);background:var(--okbg)}
+.sug-i .m i.crim{color:#fff;background:linear-gradient(135deg,var(--red),#B3282A)}
+.sug-i .m i.pts{color:var(--violet);background:var(--viobg)}
+.sug-i .m i.half{color:var(--magenta);background:var(--magbg)}
+.sug-i .m i.sigma{color:var(--amber);background:var(--warnbg)}
+.sug-i .ad{font-size:11px;color:var(--mut);margin-top:4px}
+.sug-i .dt{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.4;border-left:2px solid var(--line2);padding-left:7px}
+.sug-i .dt[hidden]{display:none}
+.sug-i .info{flex:none;background:var(--raise);border:1px solid var(--line);color:var(--mut);border-radius:7px;width:26px;height:26px;font-size:12px;font-weight:800;padding:0}
+.sug-e{padding:12px;font-size:12.5px;color:var(--dim);text-align:center;line-height:1.5}
+.sug-n{padding:8px 11px;font-size:10.5px;color:var(--amber);border-top:1px solid var(--line);background:rgba(255,176,32,.06);line-height:1.45}
 .sug-link{display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line);color:var(--patrol2);text-decoration:none;font-size:12.5px;font-weight:650}
-.picked{display:flex;align-items:center;gap:8px;margin-top:7px;padding:7px 10px;border-radius:9px;background:var(--okbg);border:1px solid rgba(25,212,106,.35);font-size:11.5px;color:var(--green);font-weight:650}
+.picked{display:flex;align-items:flex-start;gap:8px;margin-top:7px;padding:8px 10px;border-radius:9px;background:var(--okbg);border:1px solid rgba(25,212,106,.35);font-size:11.5px;color:var(--green);font-weight:650;line-height:1.4}
 .picked[hidden]{display:none}
 .picked code{font-family:ui-monospace,monospace;font-weight:800}
-.svcinfo{margin-top:6px;font-size:11.5px;color:var(--mut)}
+.svcinfo{margin-top:6px;font-size:11.5px;color:var(--mut);line-height:1.45}
 .svcinfo[hidden]{display:none}
+.svcinfo a{color:var(--patrol2)}
 
 .menu{display:grid;gap:10px;padding-top:12px}
 .mrow{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px;min-height:62px;text-align:left}
@@ -232,6 +262,7 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
 .artmap .er label{flex:1}
 .catcount{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .catcount i{font-style:normal;font-size:10.5px;color:var(--dim);background:var(--raise);border-radius:5px;padding:2px 7px}
+.srcnote{font-size:10.5px;color:var(--dim);margin-top:8px;line-height:1.45}
 
 .pick{display:grid;max-height:56vh;overflow:auto}
 .pickopt{display:flex;justify-content:space-between;align-items:center;width:100%;padding:13px 4px;min-height:50px;background:transparent;border:0;border-bottom:1px solid var(--line);font-size:15.5px;text-align:left}
@@ -264,7 +295,9 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
   .fbar .fsel:last-child{grid-column:1/-1;min-height:44px}
   .two{grid-template-columns:1fr}
   .d-pl-row .plate.big .num{font-size:22px}
-  .sug-l{max-height:210px}
+  .sug-l{max-height:220px}
+  .bulkbar{flex-wrap:wrap}
+  .bulkbar b{flex:1 1 100%}
 }
 </style>
 </head>
@@ -291,12 +324,17 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
   <section class="view" id="view-cases" hidden>
     <div class="tools">
       <button class="btn pri" id="btnNew">+ Νέα υπόθεση</button>
-      <input type="search" id="searchInput" placeholder="Πινακίδα, όνομα, τηλέφωνο, ημερομηνία…" autocomplete="off">
+      <input type="search" id="searchInput" placeholder="Πινακίδα, όνομα, τηλέφωνο, άρθρο, ημερομηνία…" autocomplete="off">
       <div class="fbar">
         <button class="fsel" data-filter="state"><small>Φάση</small><span id="fsState">Όλες</span></button>
         <button class="fsel" data-filter="folder"><small>Φάκελος</small><span id="fsFolder">Όλοι</span></button>
         <button class="fsel" data-filter="inv"><small>Προσκλήσεις</small><span id="fsInv">Όλες</span></button>
         <button class="fsel" data-filter="sort"><small>Ταξινόμηση</small><span id="fsSort">Προτερ.</span></button>
+      </div>
+      <div class="views" id="viewsRow"></div>
+      <div class="toolrow">
+        <button class="btn ghost sm" id="btnSaveView">★ Αποθήκευση προβολής</button>
+        <button class="btn ghost sm" id="btnSelMode">☑ Επιλογή πολλών</button>
       </div>
       <button class="linkbtn" id="btnClearF" hidden>Καθαρισμός φίλτρων</button>
     </div>
@@ -309,9 +347,10 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
       <button class="mrow" id="btnImport"><b>Επαναφορά / Εισαγωγή από παλιά εφαρμογή</b><span>Δέχεται και τα παλιά αρχεία backup</span></button>
       <button class="mrow" id="btnPrint"><b>Εκτύπωση λίστας</b><span>A4 οριζόντια</span></button>
       <input type="file" id="importFile" accept=".json,application/json,text/plain" hidden>
-      <div class="mrow"><b>Συχνές παραβάσεις &amp; άρθρα</b><span>Αυτές εμφανίζονται στο dropdown της φόρμας. Ο πλήρης κατάλογος προτείνεται μόνο στο ελεύθερο κείμενο.</span>
+      <div class="mrow"><b>Συχνές παραβάσεις &amp; άρθρα</b><span>Μόνο αυτές εμφανίζονται στο dropdown της φόρμας. Ο πλήρης κατάλογος προτείνεται στο ελεύθερο κείμενο.</span>
         <div class="artmap" id="artMap"></div>
         <div class="catcount" id="catCount"></div>
+        <div class="srcnote" id="srcNote"></div>
       </div>
       <button class="mrow" id="btnDiag" hidden><b>Αυτοέλεγχος</b><span id="diagSum">Δεν έχει εκτελεστεί</span></button>
       <div class="diag" id="diagOut" hidden></div>
@@ -327,6 +366,13 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
   <button data-nav="cases"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Υποθέσεις</span></button>
   <button data-nav="menu"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Μενού</span></button>
 </nav>
+
+<div class="bulkbar" id="bulkBar" hidden>
+  <b id="bulkN">0 επιλεγμένες</b>
+  <button class="btn ghost sm" id="bulkAll">Όλες</button>
+  <button class="btn sm" id="bulkMove">Μετακίνηση φακέλου</button>
+  <button class="btn ghost sm" id="bulkDone">Τέλος</button>
+</div>
 
 <dialog id="dlgForm"><form id="caseForm" class="dlg">
   <h2 id="formTitle">Νέα υπόθεση</h2>
@@ -349,10 +395,10 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
     </label>
     <div class="full" id="fViolCustomWrap" hidden>
       <label>Περιγραφή (ελεύθερο κείμενο)
-        <input name="violationOther" id="fViolOther" autocomplete="off" placeholder="π.χ. κράνος, ΑμεΑ, 38§2, ΛΕΑ…">
+        <input name="violationOther" id="fViolOther" autocomplete="off" placeholder="π.χ. κράνος, ΑμεΑ, 38§2, ΛΕΑ, βυτιοφόρο…">
       </label>
       <div class="sug" id="violSug" hidden>
-        <div class="sug-h"><span>Προτάσεις από τον κατάλογο</span><b id="violSugN"></b><button type="button" class="x" id="violSugX" aria-label="Κλείσιμο">×</button></div>
+        <div class="sug-h"><span>Κατάλογος παραβάσεων</span><b id="violSugN"></b><button type="button" class="x" id="violSugX" aria-label="Κλείσιμο">×</button></div>
         <div class="chips" id="violChips"></div>
         <div class="sug-l" id="violSugL"></div>
         <div class="sug-n">Συμπληρώνεται <b>μόνο το άρθρο</b>. Ημέρες &amp; «Προς αφαίρεση» μένουν όπως τα ορίζει η υπηρεσία ανάθεσης.</div>
@@ -374,12 +420,12 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
     </label>
     <div class="full">
       <label>Υπηρεσία παράβασης
-        <input name="service" id="fService" autocomplete="off" placeholder="π.χ. ΘΕΡ, ΤΤ ΛΗΤΗΣ, Πατρών…">
+        <input name="service" id="fService" autocomplete="off" placeholder="π.χ. ΘΕΡ, ΤΤ ΛΗΤΗΣ, Πατρών, Βέροια…">
       </label>
       <div class="sug" id="svcSug" hidden>
-        <div class="sug-h"><span>Υπηρεσίες</span><b id="svcSugN"></b><button type="button" class="x" id="svcSugX" aria-label="Κλείσιμο">×</button></div>
+        <div class="sug-h"><span>Υπηρεσίες ΕΛ.ΑΣ.</span><b id="svcSugN"></b><button type="button" class="x" id="svcSugX" aria-label="Κλείσιμο">×</button></div>
         <div class="sug-l" id="svcSugL"></div>
-        <div class="sug-n">Επίσημα στοιχεία ΕΛ.ΑΣ. Ό,τι δεν υπάρχει στον κατάλογο προτείνεται από το ιστορικό σου.</div>
+        <div class="sug-n">Επίσημα στοιχεία. Ό,τι δεν υπάρχει στον κατάλογο προτείνεται από το ιστορικό σου ή γράφεται ελεύθερα.</div>
       </div>
       <div class="svcinfo" id="svcInfo" hidden></div>
     </div>
@@ -400,9 +446,7 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
   </details>
 
   <details class="adv"><summary>Προχωρημένη διόρθωση</summary>
-    <label class="full" style="margin-top:10px">Φάση
-      <select name="manualState"></select>
-    </label>
+    <label class="full" style="margin-top:10px">Φάση<select name="manualState"></select></label>
     <div class="pinhint">«Αυτόματο» = υπολογισμός από τις ημερομηνίες. Η χειροκίνητη επιλογή κρατιέται μέχρι να την προλάβει η φυσική πορεία.</div>
     <details class="sub"><summary>Φάκελος &amp; διαδρομή</summary>
       <div class="grid g2">
@@ -455,7 +499,7 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
         <label>Εκτός αρμοδιότητας<input type="date" name="d_oos"></label>
         <label>Υπηρεσία προορισμού<input type="text" name="d_oosDest" id="fOosDest" autocomplete="off"></label>
         <div class="full sug" id="oosSug" hidden>
-          <div class="sug-h"><span>Υπηρεσίες</span><b id="oosSugN"></b><button type="button" class="x" id="oosSugX" aria-label="Κλείσιμο">×</button></div>
+          <div class="sug-h"><span>Υπηρεσίες ΕΛ.ΑΣ.</span><b id="oosSugN"></b><button type="button" class="x" id="oosSugX" aria-label="Κλείσιμο">×</button></div>
           <div class="sug-l" id="oosSugL"></div>
         </div>
         <label class="full">Αιτιολογία<input type="text" name="d_oosReason" autocomplete="off"></label>
@@ -490,7 +534,7 @@ input:not([type=date]):not([type=number]):not([type=checkbox]),textarea{text-tra
 (() => {
 'use strict';
 /* ================= ΒΑΣΙΚΑ ================= */
-const KEY='troxonomika_v2_cases', LSK_ART='troxonomika_v2_articles', LSK_BAK='troxonomika_v2_lastbackup';
+const KEY='troxonomika_v2_cases', LSK_ART='troxonomika_v2_articles', LSK_BAK='troxonomika_v2_lastbackup', LSK_VIEWS='troxonomika_v2_views';
 const OLD_KEYS=['troxonomika_final_v29','troxonomika_final_v28','troxonomika_final_v27','troxonomika_final_v26','troxonomika_final_v25'];
 const ST={
  search:{l:'Προς Αναζήτηση',t:'info',a:'Εκκρεμεί αναζήτηση τηλεφώνου'},
@@ -528,6 +572,7 @@ const CITY_TITLE={ΒΟΛΟΥ:'Βόλου',ΛΑΡΙΣΑΣ:'Λάρισας',ΛΑΜ
 
 let cases=[],folderF='all',stateF='all',invF='all',sortF='prio',q='';
 let view='today',prevView='today',openId=null,waitOpen=false,callOpen=false;
+let selMode=false,sel=new Set(),savedViews=[],activeView=-1;
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -552,259 +597,264 @@ const lastBy=a=>(a||[]).slice().sort((x,y)=>(x.d||'').localeCompare(y.d||'')).po
 const cap1=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const clone=o=>JSON.parse(JSON.stringify(o));
 
-/* ================= ΚΑΤΑΛΟΓΟΣ ΠΑΡΑΒΑΣΕΩΝ (Ν.5209/2025 κωδ. Ν.5322/2026) ================= */
-const CAT_RAW=`1|στάθμευση|Σε διάβαση πεζών ή ποδηλατιστών (<5μ.)|38§2α|30|40 ημέρες αδ. οδ.
-2|στάθμευση|Σε ράμπα ΑμεΑ|38§2ιστ|150|60 ημέρες αδ. οδ. + 70 ημ. στοιχ. κυκλ.
-3|στάθμευση|Σε χώρο ΑμεΑ (Ρ-71)|38§2ιζ|150|60 ημέρες αδ. οδ. + 70 ημ. στοιχ. κυκλ.
-4|στάθμευση|Σε συγκεκριμένο χώρο ΑμεΑ (Ρ-72)|38§2ιη|150|60 ημέρες αδ. οδ. + 70 ημ. στοιχ. κυκλ.
-5|στάθμευση|Σε θέση φόρτισης ηλεκτρικών (χωρίς φόρτιση)|38§2ιθ|30|10 ημέρες αδ. οδ.
-6|στάθμευση|Σε στάση λεωφορείου (<12μ.)|38§2β|30|-
-7|στάθμευση|Σε είσοδο/έξοδο κόμβου (<10μ.)|38§2γ|30|-
-8|στάθμευση|Σε σιδηροδρομικές γραμμές|38§2δ|1200|60 ημέρες αδ. οδ.
-9|στάθμευση|Σε πεζοδρόμιο / πλατεία / ποδηλατόδρομο|38§2ε|150|20 ημέρες αδ. οδ.
-10|στάθμευση|Σε γέφυρα|38§2στ|30|-
-11|στάθμευση|Σε στροφή/ράχη με περιορισμένη ορατότητα|38§2ζ|30|-
-12|στάθμευση|Σε σημείο με ελεύθερο πλάτος <3μ.|38§2η|30|-
-13|στάθμευση|<20μ. από σηματοδότη / <12μ. από STOP/P-1|38§2θ|30|-
-14|στάθμευση|<5μ. από τομή ρυμοτομικών γραμμών|38§2ι|30|-
-15|στάθμευση|Σε νησίδα ασφαλείας / διαχωριστική|38§2ια|30|10 ημέρες αδ. οδ.
-16|στάθμευση|Σε αυτοκινητόδρομο|38§2ιβ|30|10 ημέρες αδ. οδ.
-17|στάθμευση|Σε λωρίδα επιτάχυνσης / επιβράδυνσης|38§2ιγ|30|10 ημέρες αδ. οδ.
-18|στάθμευση|Σε σήραγγα|38§2ιδ|30|10 ημέρες αδ. οδ.
-19|στάθμευση|Σε βοηθητική οδό για βραδυκίνητα|38§2ιε|30|-
-20|στάθμευση|Σε σημείο που εμποδίζει ΜΜΜ/λεωφορεία|38§2κ|350|70 ημέρες αδ. οδ.
-21|στάθμευση|<15μ. από σιδηροδρομική διάβαση|38§3α|30|10 ημέρες αδ. οδ.
-22|στάθμευση|Μπροστά από είσοδο/έξοδο παρόδιας ιδιοκτησίας|38§3β|30|10 ημέρες αδ. οδ.
-23|στάθμευση|Σε θέση που εμποδίζει σταθμευμένο όχημα|38§3γ|30|10 ημέρες αδ. οδ.
-24|στάθμευση|Σε σημείο που το υπόλοιπο της οδού δεν επαρκεί|38§3δ|30|-
-25|στάθμευση|Παράπλευρα άλλου σταθμευμένου οχήματος|38§3ε|30|10 ημέρες αδ. οδ.
-26|στάθμευση|<5μ. από πυροσβεστικό κρουνό|38§3στ|30|-
-27|στάθμευση|Μπροστά από είσοδο/έξοδο νοσοκομείου|38§3ζ|30|40 ημέρες αδ. οδ.
-28|στάθμευση|Σε θέση που εμποδίζει χώρο στάθμευσης|38§3η|30|-
-29|στάθμευση|Σε θέση ΤΑΞΙ (Ρ-70)|38§3θ|30|-
-30|στάθμευση|Σε είσοδο/έξοδο πεζόδρομου|38§3ι|30|-
-31|στάθμευση|Σε κεντρικό οδόστρωμα τριών λωρίδων|38§3ια|30|-
-32|στάθμευση|Σε οδό προτεραιότητας (εκτός κατοικημένης)|38§3ια|30|-
-33|στάθμευση|Μη παράλληλη στάθμευση|38§7|30|-
-34|στάθμευση|Αναγκαστική στάθμευση χωρίς τριγωνική πινακίδα|38§10|30|10 ημέρες αδ. οδ.
-35|στάθμευση|Σε απαγορευτική κίτρινη ζιγκ-ζαγκ|8§8η|150|20 ημέρες αδ. οδ.
-36|στάθμευση|Κίνηση / στάθμευση σε λεωφορειολωρίδα|8§8ι|30|40 ημέρες αδ. οδ.
-37|σήμανση|Παραβίαση Ρ-39 (απαγόρευση στάθμευσης)|7§11δ|30|10 ημέρες αδ. οδ.
-38|σήμανση|Παραβίαση Ρ-40 (απαγόρευση στάσης και στάθμευσης)|7§11δ|30|10 ημέρες αδ. οδ.
-39|σήμανση|Παραβίαση Ρ-41 (απαγόρευση στάθμευσης – μονοί μήνες)|7§11δ|30|10 ημέρες αδ. οδ.
-40|σήμανση|Παραβίαση Ρ-42 (απαγόρευση στάθμευσης – ζυγοί μήνες)|7§11δ|30|10 ημέρες αδ. οδ.
-41|σήμανση|Παραβίαση Ρ-43 (χρονικός περιορισμός στάθμευσης)|7§11δ|30|10 ημέρες αδ. οδ.
-42|σήμανση|Παραβίαση STOP (Ρ-2)|7§11α|350|30 ημέρες αδ. οδ.
-43|σήμανση|Παραβίαση Ρ-1 (παραχώρηση προτεραιότητας)|7§11α|350|30 ημέρες αδ. οδ.
-44|σήμανση|Παραβίαση Ρ-29 (απαγόρευση αναστροφής)|7§11α|350|30 ημέρες αδ. οδ.
-45|σήμανση|Παραβίαση Ρ-3, Ρ-4, Ρ-34, Ρ-35, Ρ-69, Ρ-75|7§11γ|30|-
-46|σήμανση|Παραβίαση Ρ-5, Ρ-6, Ρ-32, Ρ-47 έως Ρ-63 (προτεραιότητα/όρια/κατευθύνσεις)|7§11δ|30|10 ημέρες αδ. οδ.
-47|σήμανση|Παραβίαση απαγορευτικών Ρ-7 έως Ρ-74δ (είσοδος/στροφή/προσπέραση)|7§11ε|150|20 ημέρες αδ. οδ.
-48|σήμανση|Παραβίαση Ρ-15, Ρ-16, Ρ-17|7§11στ|150|-
-49|σήμανση|Παραβίαση Ρ-33, Ρ-54 έως Ρ-76 (κατηγορία Σ)|7§11ζ|30|40 ημέρες αδ. οδ.
-50|σήμανση|Παραβίαση λοξών λωρίδων|8§10α|150|20 ημέρες αδ. οδ.
-51|κίνηση|Παραβίαση ερυθρού σηματοδότη|9§3|700|60 ημέρες αδ. οδ.
-52|κίνηση|Παραβίαση κίτρινου σηματοδότη|9§1γ|30|-
-53|κίνηση|Κίνηση αντίθετα σε μονόδρομο|20§7|350|70 ημέρες αδ. οδ.
-54|κίνηση|Κίνηση σε πεζόδρομο / πλατεία / νησίδα|20§4|350|70 ημέρες αδ. οδ.
-55|κίνηση|Παραβίαση προτεραιότητας σε κόμβο|30§5|350|30 ημέρες αδ. οδ.
-56|κίνηση|Μη συμμόρφωση σε σήμα τροχονόμου|6§1|150|20 ημέρες αδ. οδ.
-57|κίνηση|Παραβίαση σιδηροδρομικής διάβασης|31§1|1200|60 ημέρες αδ. οδ.
-58|κίνηση|Κίνηση στη ΛΕΑ|33§9|150|40 ημέρες αδ. οδ.
-59|κίνηση|Μη παραχώρηση προτεραιότητας σε πεζούς|43§2|150|40 ημέρες αδ. οδ.
-60|κίνηση|Μη διευκόλυνση οχήματος άμεσης ανάγκης|48§1|150|40 ημέρες αδ. οδ.
-61|κίνηση|Παραβίαση ακινητοποίησης|50§2|350|30 ημέρες αδ. οδ. + 30 ημ. στοιχ. κυκλ.
-62|κίνηση|Εγκατάλειψη ατυχήματος|47§2|1200|180 ημέρες αδ. οδ.
-63|ταχύτητα|Υπέρβαση ταχύτητας έως 20χλμ/ω|24§9αα|150|-
-64|ταχύτητα|Υπέρβαση 21-30χλμ/ω|24§9αβ|150|20 ημέρες αδ. οδ.
-65|ταχύτητα|Υπέρβαση 31-50χλμ/ω|24§9αγ|350|30 ημέρες αδ. οδ.
-66|ταχύτητα|Υπέρβαση >50χλμ/ω|24§9γ|700|60 ημέρες αδ. οδ.
-67|ταχύτητα|Οδήγηση >200χλμ/ω|24§9δ|2000|1 έτος αδ. οδ.
-68|φορτηγά|Υπέρβαρο 5% (Ι.Χ.Φ.)|ν.3446/2006 §1.2α|30|-
-69|φορτηγά|Υπέρβαρο 5-10% (Ι.Χ.Φ.)|ν.3446/2006 §1.2β|60|-
-70|φορτηγά|Υπέρβαρο 10-20% (Ι.Χ.Φ.)|ν.3446/2006 §1.2γ|500|-
-71|φορτηγά|Υπέρβαρο >20% (Ι.Χ.Φ.)|ν.3446/2006 §1.2δ|3000|4 μήνες στοιχ. κυκλ.
-72|φορτηγά|Ακατάλληλη φόρτωση (Ι.Χ.Φ.)|ν.3446/2006 §1.1|750|Ακινητοποίηση
-73|φορτηγά|Χωρίς ΚΤΕΟ (Ι.Χ.Φ.)|ν.3446/2006 §1.3|300|Μέχρι έκδοσης ΚΤΕΟ
-74|φορτηγά|Υπέρβαση διαστάσεων (Ι.Χ.Φ.)|ν.3446/2006 §1.4|1000|Ακινητοποίηση
-75|φορτηγά|Κυκλοφορία σε απαγορευμένες ώρες (Ι.Χ.Φ.)|ν.3446/2006 §1.5|200|Ακινητοποίηση
-76|φορτηγά|Χωρίς άδεια κυκλοφορίας (Ι.Χ.Φ.)|ν.3446/2006 §1.9|8000|Αφαίρεση στοιχ. κυκλ.
-77|φορτηγά|Μετάθεση πινακίδων (Ι.Χ.Φ.)|ν.3446/2006 §1.11|5000|6 μήνες στοιχ. κυκλ.
-78|φορτηγά|Οδήγηση χωρίς κατάλληλη άδεια (Ι.Χ.Φ.)|ν.3446/2006 §1.13|2000|2 μήνες αδ. οδ.
-79|δίκυκλα|Μη χρήση κράνους (οδηγός)|16§6|350|30 ημέρες αδ. οδ.
-80|δίκυκλα|Μη χρήση κράνους (επιβάτης)|16§6|350|-
-81|δίκυκλα|Μη χρήση γυαλιών (μοτοσικλέτα)|104§1|150|-
-82|δίκυκλα|Μεταφορά επιβάτη χωρίς υποπόδια|44§1δ|30|-
-83|δίκυκλα|Παράλληλη κίνηση|44§1δ|30|-
-84|δίκυκλα|Διήθηση με ταχύτητα >20χλμ/ω|21§9β|30|10 ημέρες αδ. οδ.
-85|δίκυκλα|Χρήση κινητού / ακουστικών (μοτοσικλέτα)|44§1στ|350|30 ημέρες αδ. οδ.
-86|δίκυκλα|Ρυμούλκηση από άλλο όχημα|44§1α|30|-
-87|δίκυκλα|Μεταφορά αντικειμένων που εμποδίζουν|44§1γ|30|-
-88|ΕΠΗΟ|Στάθμευση ΕΠΗΟ σε απαγορευμένη θέση|38§4,12|30|-
-89|ΕΠΗΟ|Είσοδος σε ποδηλατόδρομο (ΕΠΗΟ)|44§7|150|40 ημέρες (Σ)
-90|ΕΠΗΟ|Ζώο με λουρί / Ακουστικά / Κινητό (ΕΠΗΟ)|44§1ε,στ,ζ|350|30 ημέρες αδ. οδ.
-91|ΕΠΗΟ|Μη χρήση κράνους (ΕΠΗΟ)|44§12|30|-
-92|ΕΠΗΟ|Οδήγηση ΕΠΗΟ σε οδό με όριο >50χλμ/ω|24§12β|350|-
-93|ΕΠΗΟ|Ταχύτητα ΕΠΗΟ >35χλμ/ω (οδηγός)|24§12α|150|-
-94|ΕΠΗΟ|Ταχύτητα ΕΠΗΟ >35χλμ/ω (ιδιοκτήτης)|24§12α|350|-
-95|έγγραφα|Στέρηση άδειας – Ε.Ι.Χ.|98§4αβ|700|1 έτος αδ. οδ. + 30 ημ. στοιχ. κυκλ.
-96|έγγραφα|Στέρηση άδειας – Ε.Δ.Χ. / Λεωφορεία|98§4αγ|1000|1 έτος αδ. οδ. + 30 ημ. στοιχ. κυκλ.
-97|έγγραφα|Στέρηση άδειας – Μοτοσικλέτα / Μοτοποδήλατο|98§4αα|500|1 έτος αδ. οδ. + 30 ημ. στοιχ. κυκλ.
-98|έγγραφα|Οδήγηση με ληγμένη άδεια|99§2|150|Μέχρι ανανέωσης
-99|έγγραφα|Παραχώρηση οδήγησης σε μη δικαιούχο|102§1|350|30 ημέρες αδ. οδ. + 30 ημ. στοιχ. κυκλ.
-100|ασφάλεια|Ανασφάλιστο – Δίκυκλα|ΠΔ 237/86|250|6 μήνες αδ. οδ. + 6 μήνες στοιχ. κυκλ.
-101|ασφάλεια|Ανασφάλιστο – Ι.Χ.Ε. / Ι.Χ.Φ. / Α.Μ. / Μ.Ε.|ΠΔ 237/86|500|6 μήνες αδ. οδ. + 6 μήνες στοιχ. κυκλ.
-102|ασφάλεια|Ανασφάλιστο – Φ.Δ.Χ. / Λεωφορεία|ΠΔ 237/86|1000|6 μήνες αδ. οδ. + 6 μήνες στοιχ. κυκλ.
-103|ασφάλεια|Εμπλοκή σε ατύχημα χωρίς ασφάλιση|ΠΔ 237/86|250|2 χρόνια αδ. οδ. + 2 χρόνια στοιχ. κυκλ.
-104|ασφάλεια|Μη χρήση ζώνης ασφαλείας (οδηγός)|16§5|350|30 ημέρες αδ. οδ.
-105|ασφάλεια|Μη χρήση ζώνης ασφαλείας (επιβάτης)|16§5|150|-
-106|ασφάλεια|Έλλειψη ζώνης σε Ι.Χ.Ε. ή Φορτηγό ≤3,5τ.|85§17|150|Ακινητοποίηση
-107|ασφάλεια|Χωρίς ΚΤΕΟ – οδηγός (λοιπά οχήματα)|90§3-4 (Ε2-Β)|150|20 ημέρες αδ. οδ.
-108|ασφάλεια|Χωρίς ΚΤΕΟ – ιδιοκτήτης (λοιπά οχήματα)|90§3-4 (Ε2-Β)|150|-
-109|ασφάλεια|Χωρίς ΚΤΕΟ – οδηγός (Ε.Δ.Χ./ασθενοφόρο/φορτηγό >3,5τ./λεωφορείο)|90§3-4 (Ε3-Β)|350|30 ημέρες αδ. οδ.
-110|ασφάλεια|Χωρίς ΚΤΕΟ – ιδιοκτήτης (Ε.Δ.Χ./ασθενοφόρο/φορτηγό >3,5τ./λεωφορείο)|90§3-4 (Ε3-Β)|350|30 ημέρες στοιχ. κυκλ.
-111|αλκοόλ|Αλκοόλ 0,50-0,80 (γενικός)|46§7α|350|30 ημέρες αδ. οδ.
-112|αλκοόλ|Αλκοόλ 0,80-1,10 (γενικός)|46§7β|700|90 ημέρες αδ. οδ.
-113|αλκοόλ|Αλκοόλ >1,10 (γενικός)|46§7γ|1200|180 ημέρες αδ. οδ. + 180 ημ. στοιχ. κυκλ.
-114|αλκοόλ|Άρνηση αλκοολομέτρησης|46§6|1200|180 ημέρες αδ. οδ. + 180 ημ. στοιχ. κυκλ.
-115|αλκοόλ|Οδήγηση υπό τοξικές ουσίες|46§8|Ποινικές κυρώσεις|3-6 μήνες αδ. οδ.
-116|επαγγελματικά|Αλκοόλ 0,20-0,80 (επαγγελματίες)|ΚΥΑ 43500/5691/2002|350|30 ημέρες αδ. οδ.
-117|επαγγελματικά|Αλκοόλ 0,80-1,10 (επαγγελματίες)|ΚΥΑ 43500/5691/2002|700|90 ημέρες αδ. οδ.
-118|επαγγελματικά|Αλκοόλ >1,10 (επαγγελματίες)|ΚΥΑ 43500/5691/2002|1200|180 ημέρες αδ. οδ. + 180 ημ. στοιχ. κυκλ.
-119|υποτροπή|Ερυθρός – 2η υποτροπή (χωρίς ατύχημα)|110§3α|1000|180 ημέρες αδ. οδ.
-120|υποτροπή|Ερυθρός – 3η υποτροπή (χωρίς ατύχημα)|110§4α|2000|1 έτος αδ. οδ.
-121|υποτροπή|Ερυθρός με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.
-122|υποτροπή|STOP/P-29 – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.
-123|υποτροπή|STOP/P-29 – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.
-124|υποτροπή|STOP/P-29 με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.
-125|υποτροπή|ΛΕΑ – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.
-126|υποτροπή|ΛΕΑ – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.
-127|έγγραφα|Εισαγωγή σε κυκλοφορία μη νόμιμου μέσου|5§2|150|-
-131|δίκυκλα|Οδήγηση μοτοσικλέτας χωρίς φώτα ημέρας|39§4|30|-
-132|κίνηση|Παραβίαση φώτων ομίχλης|40§2|30|-
-133|κίνηση|Παραβίαση ηχητικών προειδοποιήσεων|41|30|-
-134|κίνηση|Αντικανονικό άνοιγμα θυρών|34|30|-
-135|φορτηγά|Παραβίαση κανόνων φόρτωσης (γενικά)|36|150|-
-136|κίνηση|Μεταφορά επιβατών πέραν ορίου (βασική)|37|30|10 ημέρες αδ. οδ.
-141|υποτροπή|Ταχύτητα >50χλμ/ω – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.
-142|υποτροπή|Ταχύτητα >50χλμ/ω – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.
-144|υποτροπή|Αλκοόλ >1,10 g/l – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.
-145|υποτροπή|Αλκοόλ >1,10 g/l – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.
-146|υποτροπή|Αλκοόλ >1,10 g/l με ατύχημα – 2η υποτροπή|110§3β|2000|7 έτη αδ. οδ.
-152|υποτροπή|Σιδηροδρομική διάβαση με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.
-155|υποτροπή|Εγκατάλειψη ατυχήματος με ατύχημα – 2η υποτροπή|110§3β|2000|7 έτη αδ. οδ.
-158|υποτροπή|Παραβίαση ακινητοποίησης με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.
-159|υποτροπή|Χρήση κινητού με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.
-160|υποτροπή|Οδήγηση χωρίς άδεια – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.
-161|υποτροπή|Οδήγηση χωρίς άδεια – 3η υποτροπή|110§4β|4000|8 έτη αδ. οδ.
-162|υποτροπή|Μη χρήση ζώνης / κράνους – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.
-163|υποτροπή|Μη χρήση ζώνης / κράνους – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.
-164|υποτροπή|Μη χρήση παιδικών καθισμάτων – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.
-165|υποτροπή|Μη χρήση παιδικών καθισμάτων – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.
-166|υποτροπή|Στάθμευση σε ΑμεΑ / ράμπα – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.
-167|υποτροπή|Στάθμευση σε ΑμεΑ / ράμπα – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.
-169|φορτηγά|Ακατάλληλη φόρτωση (οδηγός)|ν.3446/2006 §1.1|750|Ακινητοποίηση
-170|φορτηγά|Ακατάλληλη φόρτωση (υπεύθυνος φόρτωσης)|ν.3446/2006 §1.1|1500|-
-171|φορτηγά|Υπέρβαρο 5% (ιδιοκτήτης)|ν.3446/2006 §1.2α|30|-
-172|φορτηγά|Υπέρβαρο 5-10% (ιδιοκτήτης)|ν.3446/2006 §1.2β|60|-
-173|φορτηγά|Υπέρβαρο 10-20% (ιδιοκτήτης)|ν.3446/2006 §1.2γ|500|-
-174|φορτηγά|Υπέρβαρο >20% (ιδιοκτήτης)|ν.3446/2006 §1.2δ|3000|4 μήνες στοιχ. κυκλ.
-175|φορτηγά|Υπέρβαρο >20% (οδηγός)|ν.3446/2006 §1.2δ|3000|-
-176|φορτηγά|Χωρίς ΚΤΕΟ (ιδιοκτήτης)|ν.3446/2006 §1.3|300|Μέχρι έκδοσης ΚΤΕΟ
-177|φορτηγά|Χωρίς ΚΤΕΟ (οδηγός)|ν.3446/2006 §1.3|300|-
-178|φορτηγά|Υπέρβαση διαστάσεων (ιδιοκτήτης)|ν.3446/2006 §1.4|1000|Ακινητοποίηση
-179|φορτηγά|Κυκλοφορία σε απαγορευμένες ώρες (οδηγός)|ν.3446/2006 §1.5|200|Ακινητοποίηση
-180|φορτηγά|Χωρίς ΚΕΚ (ιδιοκτήτης)|ν.3446/2006 §1.6|150|-
-181|φορτηγά|Χωρίς άδεια κυκλοφορίας (ιδιοκτήτης)|ν.3446/2006 §1.9|8000|Αφαίρεση στοιχ. κυκλ.
-182|φορτηγά|Χωρίς άδεια κυκλοφορίας (οδηγός)|ν.3446/2006 §1.9|1000|-
-183|φορτηγά|Μετάθεση πινακίδων (ιδιοκτήτης)|ν.3446/2006 §1.11|5000|6 μήνες στοιχ. κυκλ.
-184|φορτηγά|Οδήγηση χωρίς κατάλληλη άδεια (οδηγός)|ν.3446/2006 §1.13|2000|2 μήνες αδ. οδ.
-185|φορτηγά|Οδήγηση χωρίς κατάλληλη άδεια (ιδιοκτήτης)|ν.3446/2006 §1.13|2000|-
-186|φορτηγά|Μη ανανέωση άδειας κυκλοφορίας (Ι.Χ.Φ.)|ν.3446/2006 §1.10|200|Μέχρι έκδοσης νέας άδειας
-187|φορτηγά|Παράνομη αλλαγή κατηγορίας (Ι.Χ.Φ. δημοσίας χρήσης)|ν.3446/2006 §1.16|5000|2 μήνες στοιχ. κυκλ.
-188|φορτηγά|Μεταφορά επικίνδυνων εμπορευμάτων χωρίς ADR|ν.3446/2006 §1.26|3000|-
-189|φορτηγά|Υπέρβαση ωραρίου οδήγησης (30-60 λεπτά)|ν.3446/2006 §1.49αα|80|-
-190|φορτηγά|Υπέρβαση ωραρίου οδήγησης (60-120 λεπτά)|ν.3446/2006 §1.49αβ|200|-
-191|φορτηγά|Υπέρβαση ωραρίου οδήγησης (>120 λεπτά)|ν.3446/2006 §1.49αγ|400|Ακινητοποίηση 4 ωρών
-192|φορτηγά|Οδήγηση χωρίς διάλειμμα|ν.3446/2006 §1.49β|200|-
-193|φορτηγά|Μη ύπαρξη ηλεκτρονικά αναγνώσιμου σήματος (Ι.Χ.Φ. δημοσίας χρήσης)|ν.3446/2006 §1.50|3000|-
-194|φορτηγά|Εθνικές μεταφορές με όχημα διεθνών μεταφορών|ν.3446/2006 §1.17|1500|-
-195|φορτηγά|Μη τήρηση όρων συνδυασμένης μεταφοράς|ν.3446/2006 §1.24|5000|-
-196|φορτηγά|Παράβαση κανόνων ενδομεταφορών (Καν. 3118/93)|ν.3446/2006 §1.25|5000|-
-197|φορτηγά|Παραποίηση αριθμού πλαισίου (Ι.Χ.Φ.)|ν.3446/2006 §1.7|1000|Οριστική αφαίρεση στοιχ. κυκλ.
-198|φορτηγά|Μη απογραφή / ταξινόμηση (Ι.Χ.Φ.)|ν.3446/2006 §1.8|1000|Μέχρι νόμιμης απογραφής
-199|φορτηγά|Παραχώρηση χρήσης Ι.Χ.Φ. σε τρίτο (ιδιοκτήτης)|ν.3446/2006 §1.30|3000|2 μήνες στοιχ. κυκλ.
-200|φορτηγά|Μεταφορά για λογαριασμό τρίτων (Ι.Χ.Φ.)|ν.3446/2006 §1.31|5000|2 μήνες στοιχ. κυκλ.
-201|φορτηγά|Μεταφορά αγαθών >4.000kg απευθείας σε πελάτη (έμπορος)|ν.3446/2006 §1.32|3000|2 μήνες στοιχ. κυκλ.
-202|φορτηγά|Φόρτωση χωματουργικού χωρίς σύμβαση έργου|ν.3446/2006 §1.33|1500|2 μήνες στοιχ. κυκλ.
-203|φορτηγά|Μεταφορά προσώπων με Ι.Χ.Φ.|ν.3446/2006 §1.34|200|-
-204|φορτηγά|Προσάρτηση άλλου ρυμουλκουμένου εκτός αδείας|ν.3446/2006 §1.35|5000|-
-205|φορτηγά|Χωρίς εγγραφή στοιχείων αμαξώματος (>4.000kg)|ν.3446/2006 §1.36|200|-
-206|φορτηγά|Κυκλοφορία Ι.Χ.Φ. ≤4.000kg κατά παρ. άρθρου 26 ν.1959/91|ν.3446/2006 §1.37|150|-
-207|φορτηγά|Φόρτωση/εκφόρτωση καυσίμων σε ακατάλληλο χώρο (βυτιοφόρο)|ν.3446/2006 §1.38|5000|6 μήνες στοιχ. κυκλ.
-208|φορτηγά|Μεταφορά βυτιοφόρου εταιρείας πετρελαιοειδών κατά παράβαση 4§1η|ν.3446/2006 §1.39|5000|6 μήνες στοιχ. κυκλ.
-209|φορτηγά|Μεταφορά καυσίμων χωρίς συνοδευτικά έγγραφα|ν.3446/2006 §1.40|5000|6 μήνες στοιχ. κυκλ.
-210|φορτηγά|Μεταφορά καυσίμων διαφορετικών από την άδεια κυκλοφορίας|ν.3446/2006 §1.41|5000|6 μήνες στοιχ. κυκλ.
-211|φορτηγά|Διεθνείς μεταφορές Ι.Χ.Φ. κατά παράβαση υ.α. Φ205/68/1/1983|ν.3446/2006 §1.42|1000|-
-212|φορτηγά|Μεταφορά εμπορευμάτων χωρίς συνοδευτικά έγγραφα|ν.3446/2006 §1.43|600|-
-213|φορτηγά|Διεθνής μεταφορά για τρίτους χωρίς CMR|ν.3446/2006 §1.44|600|-
-214|φορτηγά|Χρήση πλαστής/παραχαραγμένης άδειας ΕΔΥΜ|ν.3446/2006 §1.45|3000|Απαγόρευση εισόδου 1 έτος
-215|φορτηγά|Εθνική μεταφορά με φορτηγό τρίτης χώρας|ν.3446/2006 §1.46|5000|Απαγόρευση εισόδου 6 μήνες
-216|φορτηγά|Χρήση πλαστής άδειας διμερούς/τράνζιτ/τριγωνικής|ν.3446/2006 §1.47|3000|Απαγόρευση εισόδου 1 έτος
-217|φορτηγά|Διεθνής μεταφορά από μη κοινοτικό μεταφορέα χωρίς άδεια|ν.3446/2006 §1.48|3000|Απαγόρευση εισόδου 1 έτος
-218|φορτηγά|Κυκλοφορία ρυμουλκούμενου Ο1/Ο2 χωρίς άδεια/πινακίδες|ν.5290/2026 §14|Κυρώσεις άρθρων 92 & 94 ΚΟΚ|-
-219|επαγγελματικά|Μη προειδοποίηση εκκίνησης λεωφορείου/ταξί|29§2|30|40 ημέρες αδ. οδ. (Σ)
-220|επαγγελματικά|Μη προσέγγιση σε στάση λεωφορείου/ταξί|29§3|30|40 ημέρες αδ. οδ. (Σ)
-221|επαγγελματικά|Οδήγηση ταξί/λεωφορείου πέραν χρονικών ορίων|17§5|150|20 ημέρες αδ. οδ.
-222|επαγγελματικά|Παραβίαση ειδικών κανόνων Ε.Δ.Χ. (έλλειψη ταξιμέτρου)|98§4αγ|1000|1 έτος αδ. οδ.
-223|επαγγελματικά|Οδήγηση ταξί/λεωφορείου χωρίς ειδική άδεια|98§4αγ|1000|1 έτος αδ. οδ.
-224|επαγγελματικά|Μη τήρηση υποχρεώσεων οδηγού Ε.Δ.Χ. (ευγένεια)|16§7|150|40 ημέρες (Σ)
-225|επαγγελματικά|Μη χρήση ζώνης ασφαλείας (οδηγός ταξί/λεωφορείου)|16§5|350|30 ημέρες αδ. οδ.
-226|επαγγελματικά|Μη χρήση ζώνης ασφαλείας (επιβάτης ταξί/λεωφορείου)|16§5|150|-
-227|ασφάλεια|Χρήση κινητού / ακουστικών (οδηγός Ι.Χ.)|17§2|350|30 ημέρες αδ. οδ.
-228|υποτροπή|Χρήση κινητού – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.
-229|υποτροπή|Χρήση κινητού – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.
-230|σήμανση|Παραβίαση Ρ-15, Ρ-16, Ρ-17 (πεζοί, ζωήλατα, χειράμαξες)|7§11στ|150|-
-231|κίνηση|Παράλειψη τοποθέτησης μέσων σήμανσης έργων|13§4|1500|-
-232|κίνηση|Παράνομη εγκατάσταση πινακίδων / σηματοδοτών|14§9|1500|-
-233|κίνηση|Παράνομη πρόσβαση σε αυτοκινητόδρομο|33§12|150|-
-234|κίνηση|Παράνομη κατάληψη οδού / πεζοδρομίου|52§6|350|-
-235|κίνηση|Παράνομοι αγώνες σε οδούς|53§4|50000|-
-236|ασφάλεια|Χρήση φώτων ομίχλης χωρίς λόγο|73§3|30|-
-240|υποτροπή|Οδήγηση χωρίς άδεια – 1η υποτροπή|110§3β|2000|4 έτη αδ. οδ.
-241|υποτροπή|Οδήγηση χωρίς άδεια – 2η υποτροπή|110§4β|4000|8 έτη αδ. οδ.
-242|υποτροπή|Κινητό τηλέφωνο – 1η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.
-243|υποτροπή|Κινητό τηλέφωνο – 2η υποτροπή|110§4α|2000|1 έτος αδ. οδ.
-245|φορτηγά|Παραποίηση πινακίδων (Ι.Χ.Φ.)|ν.3446/2006 §1.11|5000|Μέχρι τη χορήγηση νέων πινακίδων
-246|φορτηγά|Παραποίηση πινακίδων (ιδιοκτήτης)|ν.3446/2006 §1.11|5000|Μέχρι τη χορήγηση νέων πινακίδων
-247|ΕΠΗΟ|Ταχύτητα ΕΠΗΟ 26-35χλμ/ω (οδηγός)|24§12α|30|-
-248|ΕΠΗΟ|Ταχύτητα ΕΠΗΟ 26-35χλμ/ω (ιδιοκτήτης)|24§12α|150|-
-249|ΕΠΗΟ|Κίνηση ΕΠΗΟ εκτός ποδηλατόδρομου σε οδό με ποδηλατόδρομο|44§5|30|-
-250|ΕΠΗΟ|Οδήγηση ΕΠΗΟ από ανήλικο <17 ετών|44§10|150|Ακινητοποίηση 20 ημερών (αν ιδιωτικής χρήσης)
-251|ΕΠΗΟ|Μεταφορά επιβάτη με ΕΠΗΟ|44§4|150|-
-252|ΕΠΗΟ|Μη παραχώρηση προτεραιότητας σε πεζό (ΕΠΗΟ)|44§14,3|30|-
-253|ΕΠΗΟ|Μη έγκαιρη προειδοποίηση αλλαγής κατεύθυνσης (ΕΠΗΟ)|44§13|30|-
-254|ΕΠΗΟ|Μη χρήση ανακλαστικού γιλέκου τη νύχτα (ΕΠΗΟ)|44§9|30|-
-255|ΕΠΗΟ|Ρυμούλκηση / μεταφορά αντικειμένων με ΕΠΗΟ|44§1α,β,γ|30|-
-256|ΕΠΗΟ|Κίνηση ΕΠΗΟ ανά δύο ή περισσότερα παράλληλα|44§1δ|30|-
-257|ΕΠΗΟ|Οδηγός ΕΠΗΟ χωρίς έγγραφο ταυτοποίησης / ασφαλιστήριο|103§1|30|-
-258|ΕΠΗΟ|Ανασφάλιστο ΕΠΗΟ|27Α ν.4784/2021|250|-
-259|έγγραφα|Οδηγός χωρίς τα απαιτούμενα έγγραφα|103§1|30|-`;
-const CAT_SOURCE='Ν.5209/2025, κωδικοποίηση Ν.5322/2026 (ΦΕΚ Α΄117) · 2026.11';
+/* ================= ΚΑΤΑΛΟΓΟΣ ΠΑΡΑΒΑΣΕΩΝ =================
+   id|κατηγορία|ονομασία|άρθρο|πρόστιμο|αφαίρεση(νόμος)|severity|ΣΕΣΟ|ποινικό|μισό|αιτιολογία
+   Πηγή: Ν.5209/2025 όπως κωδικοποιήθηκε με Ν.5322/2026 (ΦΕΚ Α΄117) · DATA 2026.11
+   Χρησιμοποιείται ΑΠΟΚΛΕΙΣΤΙΚΑ για πρόταση άρθρου στο ελεύθερο κείμενο.            */
+const CAT_SOURCE='Ν.5209/2025, κωδικοποίηση Ν.5322/2026 (ΦΕΚ Α΄117)';
+const CAT_VERSION='2026.11';
+const CAT_RAW=`1|στάθμευση|Σε διάβαση πεζών ή ποδηλατιστών (<5μ.)|38§2α|30|40 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης (κατηγορία Σ)
+2|στάθμευση|Σε ράμπα ΑμεΑ|38§2ιστ|150|60 ημέρες αδ. οδ. + 70 ημ. στοιχ. κυκλ.|5|0|0|1|Αφαίρεση άδειας οδήγησης (20+40 από Σ) + 70 ημ. στοιχ. κυκλοφορίας
+3|στάθμευση|Σε χώρο ΑμεΑ (Ρ-71)|38§2ιζ|150|60 ημέρες αδ. οδ. + 70 ημ. στοιχ. κυκλ.|5|0|0|1|Αφαίρεση άδειας οδήγησης (20+40 από Σ) + 70 ημ. στοιχ. κυκλοφορίας
+4|στάθμευση|Σε συγκεκριμένο χώρο ΑμεΑ (Ρ-72)|38§2ιη|150|60 ημέρες αδ. οδ. + 70 ημ. στοιχ. κυκλ.|5|0|0|1|Αφαίρεση άδειας οδήγησης (20+40 από Σ) + 70 ημ. στοιχ. κυκλοφορίας
+5|στάθμευση|Σε θέση φόρτισης ηλεκτρικών (χωρίς φόρτιση)|38§2ιθ|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+6|στάθμευση|Σε στάση λεωφορείου (<12μ.)|38§2β|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+7|στάθμευση|Σε είσοδο/έξοδο κόμβου (<10μ.)|38§2γ|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+8|στάθμευση|Σε σιδηροδρομικές γραμμές|38§2δ|1200|60 ημέρες αδ. οδ.|7|9|1|0|Αφαίρεση άδειας οδήγησης + ΠΛΗΜΜΕΛΗΜΑ (φυλάκιση ≥1 έτος)
+9|στάθμευση|Σε πεζοδρόμιο / πλατεία / ποδηλατόδρομο|38§2ε|150|20 ημέρες αδ. οδ.|4|0|0|1|Αφαίρεση άδειας οδήγησης (Ε2-Β, σύμφωνα με την §11ζ)
+10|στάθμευση|Σε γέφυρα|38§2στ|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+11|στάθμευση|Σε στροφή/ράχη με περιορισμένη ορατότητα|38§2ζ|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+12|στάθμευση|Σε σημείο με ελεύθερο πλάτος <3μ.|38§2η|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+13|στάθμευση|<20μ. από σηματοδότη / <12μ. από STOP/P-1|38§2θ|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+14|στάθμευση|<5μ. από τομή ρυμοτομικών γραμμών|38§2ι|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+15|στάθμευση|Σε νησίδα ασφαλείας / διαχωριστική|38§2ια|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+16|στάθμευση|Σε αυτοκινητόδρομο|38§2ιβ|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+17|στάθμευση|Σε λωρίδα επιτάχυνσης / επιβράδυνσης|38§2ιγ|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+18|στάθμευση|Σε σήραγγα|38§2ιδ|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+19|στάθμευση|Σε βοηθητική οδό για βραδυκίνητα|38§2ιε|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+20|στάθμευση|Σε σημείο που εμποδίζει ΜΜΜ/λεωφορεία|38§2κ|350|70 ημέρες αδ. οδ.|7|5|0|0|Αφαίρεση άδειας οδήγησης (30+40 από Σ)
+21|στάθμευση|<15μ. από σιδηροδρομική διάβαση|38§3α|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+22|στάθμευση|Μπροστά από είσοδο/έξοδο παρόδιας ιδιοκτησίας|38§3β|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+23|στάθμευση|Σε θέση που εμποδίζει σταθμευμένο όχημα|38§3γ|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+24|στάθμευση|Σε σημείο που το υπόλοιπο της οδού δεν επαρκεί|38§3δ|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+25|στάθμευση|Παράπλευρα άλλου σταθμευμένου οχήματος|38§3ε|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+26|στάθμευση|<5μ. από πυροσβεστικό κρουνό|38§3στ|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+27|στάθμευση|Μπροστά από είσοδο/έξοδο νοσοκομείου|38§3ζ|30|40 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης (κατηγορία Σ)
+28|στάθμευση|Σε θέση που εμποδίζει χώρο στάθμευσης|38§3η|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+29|στάθμευση|Σε θέση ΤΑΞΙ (Ρ-70)|38§3θ|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+30|στάθμευση|Σε είσοδο/έξοδο πεζόδρομου|38§3ι|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+31|στάθμευση|Σε κεντρικό οδόστρωμα τριών λωρίδων|38§3ια|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+32|στάθμευση|Σε οδό προτεραιότητας (εκτός κατοικημένης)|38§3ια|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+33|στάθμευση|Μη παράλληλη στάθμευση|38§7|30|-|1|0|0|1|Καμία αφαίρεση (Ε1-Α)
+34|στάθμευση|Αναγκαστική στάθμευση χωρίς τριγωνική πινακίδα|38§10|30|10 ημέρες αδ. οδ.|2|0|0|1|Αφαίρεση άδειας οδήγησης
+35|στάθμευση|Σε απαγορευτική κίτρινη ζιγκ-ζαγκ|8§8η|150|20 ημέρες αδ. οδ.|4|0|0|1|Αφαίρεση άδειας οδήγησης
+36|στάθμευση|Κίνηση / στάθμευση σε λεωφορειολωρίδα|8§8ι|30|40 ημέρες αδ. οδ.|2|5|0|1|Αφαίρεση άδειας οδήγησης (κατηγορία Σ)
+37|σήμανση|Παραβίαση Ρ-39 (απαγόρευση στάθμευσης)|7§11δ|30|10 ημέρες αδ. οδ.|2|0|0|0|Αφαίρεση άδειας οδήγησης
+38|σήμανση|Παραβίαση Ρ-40 (απαγόρευση στάσης και στάθμευσης)|7§11δ|30|10 ημέρες αδ. οδ.|2|0|0|0|Αφαίρεση άδειας οδήγησης
+39|σήμανση|Παραβίαση Ρ-41 (απαγόρευση στάθμευσης – μονοί μήνες)|7§11δ|30|10 ημέρες αδ. οδ.|2|0|0|0|Αφαίρεση άδειας οδήγησης
+40|σήμανση|Παραβίαση Ρ-42 (απαγόρευση στάθμευσης – ζυγοί μήνες)|7§11δ|30|10 ημέρες αδ. οδ.|2|0|0|0|Αφαίρεση άδειας οδήγησης
+41|σήμανση|Παραβίαση Ρ-43 (χρονικός περιορισμός στάθμευσης)|7§11δ|30|10 ημέρες αδ. οδ.|2|0|0|0|Αφαίρεση άδειας οδήγησης
+42|σήμανση|Παραβίαση STOP (Ρ-2)|7§11α|350|30 ημέρες αδ. οδ.|6|7|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β — Ε4 μόνο αν προκλήθηκε ατύχημα)
+43|σήμανση|Παραβίαση Ρ-1 (παραχώρηση προτεραιότητας)|7§11α|350|30 ημέρες αδ. οδ.|6|9|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+44|σήμανση|Παραβίαση Ρ-29 (απαγόρευση αναστροφής)|7§11α|350|30 ημέρες αδ. οδ.|6|7|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+45|σήμανση|Παραβίαση Ρ-3, Ρ-4, Ρ-34, Ρ-35, Ρ-69, Ρ-75|7§11γ|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+46|σήμανση|Παραβίαση Ρ-5, Ρ-6, Ρ-32, Ρ-47, Ρ-48, Ρ-49, Ρ-50, Ρ-50α, Ρ-50δ, Ρ-51α, Ρ-51δ, Ρ-52, Ρ-52α, Ρ-52δ, Ρ-53, Ρ-57, Ρ-59, Ρ-60, Ρ-63|7§11δ|30|10 ημέρες αδ. οδ.|2|0|0|0|Αφαίρεση άδειας οδήγησης (Ε1-Β)
+47|σήμανση|Παραβίαση Ρ-7, Ρ-8, Ρ-9, Ρ-10, Ρ-11, Ρ-12, Ρ-13, Ρ-14, Ρ-18, Ρ-19, Ρ-20, Ρ-21, Ρ-22, Ρ-23, Ρ-24, Ρ-25, Ρ-26, Ρ-27, Ρ-28, Ρ-30, Ρ-31, Ρ-45, Ρ-46, Ρ-64, Ρ-73α, Ρ-73δ, Ρ-74α, Ρ-74δ|7§11ε|150|20 ημέρες αδ. οδ.|4|0|0|0|Αφαίρεση άδειας οδήγησης (Ε2-Β)
+48|σήμανση|Παραβίαση Ρ-15, Ρ-16, Ρ-17|7§11στ|150|-|3|0|0|0|Καμία αφαίρεση (Ε2-Α)
+49|σήμανση|Παραβίαση Ρ-33, Ρ-54, Ρ-55, Ρ-56, Ρ-65, Ρ-66, Ρ-66α, Ρ-67, Ρ-67α, Ρ-76|7§11ζ|30|40 ημέρες αδ. οδ.|2|0|0|0|Αφαίρεση άδειας οδήγησης (κατηγορία Σ)
+50|σήμανση|Παραβίαση λοξών λωρίδων|8§10α|150|20 ημέρες αδ. οδ.|4|0|0|0|Αφαίρεση άδειας οδήγησης
+51|κίνηση|Παραβίαση ερυθρού σηματοδότη|9§3|700|60 ημέρες αδ. οδ.|7|9|0|0|Αφαίρεση άδειας οδήγησης (Ε4)
+52|κίνηση|Παραβίαση κίτρινου σηματοδότη|9§1γ|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+53|κίνηση|Κίνηση αντίθετα σε μονόδρομο|20§7|350|70 ημέρες αδ. οδ.|7|5|0|0|Αφαίρεση άδειας οδήγησης
+54|κίνηση|Κίνηση σε πεζόδρομο / πλατεία / νησίδα|20§4|350|70 ημέρες αδ. οδ.|7|5|0|0|Αφαίρεση άδειας οδήγησης
+55|κίνηση|Παραβίαση προτεραιότητας σε κόμβο|30§5|350|30 ημέρες αδ. οδ.|6|7|0|0|Αφαίρεση άδειας οδήγησης
+56|κίνηση|Μη συμμόρφωση σε σήμα τροχονόμου|6§1|150|20 ημέρες αδ. οδ.|4|3|0|0|Αφαίρεση άδειας οδήγησης
+57|κίνηση|Παραβίαση σιδηροδρομικής διάβασης|31§1|1200|60 ημέρες αδ. οδ.|7|9|1|0|Αφαίρεση άδειας οδήγησης + ΠΛΗΜΜΕΛΗΜΑ (φυλάκιση ≥1 έτος)
+58|κίνηση|Κίνηση στη ΛΕΑ|33§9|150|40 ημέρες αδ. οδ.|5|5|0|0|Αφαίρεση άδειας οδήγησης
+59|κίνηση|Μη παραχώρηση προτεραιότητας σε πεζούς|43§2|150|40 ημέρες αδ. οδ.|5|0|0|0|Αφαίρεση άδειας οδήγησης
+60|κίνηση|Μη διευκόλυνση οχήματος άμεσης ανάγκης|48§1|150|40 ημέρες αδ. οδ.|5|0|0|0|Αφαίρεση άδειας οδήγησης
+61|κίνηση|Παραβίαση ακινητοποίησης|50§2|350|30 ημέρες αδ. οδ. + 30 ημ. στοιχ. κυκλ.|6|0|1|0|Αφαίρεση άδειας + στοιχ. κυκλοφορίας + ΠΛΗΜΜΕΛΗΜΑ (φυλάκιση ≤1 έτος)
+62|κίνηση|Εγκατάλειψη ατυχήματος|47§2|1200|180 ημέρες αδ. οδ.|7|0|1|0|Αφαίρεση άδειας οδήγησης + ΠΛΗΜΜΕΛΗΜΑ (φυλάκιση ≥3 μήνες)
+63|ταχύτητα|Υπέρβαση ταχύτητας έως 20χλμ/ω|24§9αα|150|-|3|3|0|0|Καμία αφαίρεση (Ε2-Α)
+64|ταχύτητα|Υπέρβαση 21-30χλμ/ω|24§9αβ|150|20 ημέρες αδ. οδ.|4|4|0|0|Αφαίρεση άδειας οδήγησης (Ε2-Β)
+65|ταχύτητα|Υπέρβαση 31-50χλμ/ω|24§9αγ|350|30 ημέρες αδ. οδ.|6|5|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+66|ταχύτητα|Υπέρβαση >50χλμ/ω|24§9γ|700|60 ημέρες αδ. οδ.|7|9|0|0|Αφαίρεση άδειας οδήγησης (Ε4)
+67|ταχύτητα|Οδήγηση >200χλμ/ω|24§9δ|2000|1 έτος αδ. οδ.|7|9|0|0|Αφαίρεση άδειας οδήγησης (Ε4)
+68|φορτηγά|Υπέρβαρο 5% (Ι.Χ.Φ.)|ν.3446/2006 §1.2α|30|-|1|0|0|0|Μόνο πρόστιμο (ιδιοκτήτης). Ελαφρά: +50-250€ στον υπεύθυνο φόρτωσης
+69|φορτηγά|Υπέρβαρο 5-10% (Ι.Χ.Φ.)|ν.3446/2006 §1.2β|60|-|1|0|0|0|Μόνο πρόστιμο (ιδιοκτήτης). Ελαφρά: +50-250€ στον υπεύθυνο φόρτωσης
+70|φορτηγά|Υπέρβαρο 10-20% (Ι.Χ.Φ.)|ν.3446/2006 §1.2γ|500|-|3|0|0|0|Πρόστιμο ιδιοκτήτη + 500€ οδηγού + 1.500€ υπεύθ. φόρτωσης
+71|φορτηγά|Υπέρβαρο >20% (Ι.Χ.Φ.)|ν.3446/2006 §1.2δ|3000|4 μήνες στοιχ. κυκλ.|6|0|0|0|3.000€ ιδιοκτήτη + 3.000€ οδηγού + 5.000€ υπεύθ. φόρτωσης
+72|φορτηγά|Ακατάλληλη φόρτωση (Ι.Χ.Φ.)|ν.3446/2006 §1.1|750|Ακινητοποίηση|5|0|0|0|750€ οδηγός + 1.500€ υπεύθ. φόρτωσης
+73|φορτηγά|Χωρίς ΚΤΕΟ (Ι.Χ.Φ.)|ν.3446/2006 §1.3|300|Μέχρι έκδοσης ΚΤΕΟ|3|0|0|0|Πρόστιμο ιδιοκτήτη + οδηγού
+74|φορτηγά|Υπέρβαση διαστάσεων (Ι.Χ.Φ.)|ν.3446/2006 §1.4|1000|Ακινητοποίηση|4|0|0|0|Ακινητοποίηση οχήματος
+75|φορτηγά|Κυκλοφορία σε απαγορευμένες ώρες (Ι.Χ.Φ.)|ν.3446/2006 §1.5|200|Ακινητοποίηση|3|0|0|0|Ακινητοποίηση για το διάστημα απαγόρευσης
+76|φορτηγά|Χωρίς άδεια κυκλοφορίας (Ι.Χ.Φ.)|ν.3446/2006 §1.9|8000|Αφαίρεση στοιχ. κυκλ.|7|0|0|0|Πρόστιμο ιδιοκτήτη (8.000€) + οδηγού (1.000€)
+77|φορτηγά|Μετάθεση πινακίδων (Ι.Χ.Φ.)|ν.3446/2006 §1.11|5000|6 μήνες στοιχ. κυκλ.|7|0|0|0|Πρόστιμο ιδιοκτήτη + αφαίρεση στοιχείων κυκλοφορίας
+78|φορτηγά|Οδήγηση χωρίς κατάλληλη άδεια (Ι.Χ.Φ.)|ν.3446/2006 §1.13|2000|2 μήνες αδ. οδ.|7|0|0|0|Πρόστιμο ιδιοκτήτη + οδηγού (2.000€ έκαστος) + αφαίρεση άδειας
+79|δίκυκλα|Μη χρήση κράνους (οδηγός)|16§6|350|30 ημέρες αδ. οδ.|6|5|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+80|δίκυκλα|Μη χρήση κράνους (επιβάτης)|16§6|350|-|5|0|0|0|Πρόστιμο μόνο (Ε3-Α)
+81|δίκυκλα|Μη χρήση γυαλιών (μοτοσικλέτα)|104§1|150|-|3|0|0|0|Πρόστιμο μόνο (Ε2-Α)
+82|δίκυκλα|Μεταφορά επιβάτη χωρίς υποπόδια|44§1δ|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+83|δίκυκλα|Παράλληλη κίνηση|44§1δ|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+84|δίκυκλα|Διήθηση με ταχύτητα >20χλμ/ω|21§9β|30|10 ημέρες αδ. οδ.|2|0|0|0|Αφαίρεση άδειας οδήγησης (Ε1-Β)
+85|δίκυκλα|Χρήση κινητού / ακουστικών (μοτοσικλέτα)|44§1στ|350|30 ημέρες αδ. οδ.|6|4|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+86|δίκυκλα|Ρυμούλκηση από άλλο όχημα|44§1α|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+87|δίκυκλα|Μεταφορά αντικειμένων που εμποδίζουν|44§1γ|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+88|ΕΠΗΟ|Στάθμευση ΕΠΗΟ σε απαγορευμένη θέση|38§4,12|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+89|ΕΠΗΟ|Είσοδος σε ποδηλατόδρομο (ΕΠΗΟ)|44§7|150|40 ημέρες (Σ)|3|0|0|0|Πρόστιμο (Ε2-Α) + αφαίρεση άδειας 40 ημέρες (Σ)
+90|ΕΠΗΟ|Ζώο με λουρί / Ακουστικά / Κινητό (ΕΠΗΟ)|44§1ε,στ,ζ|350|30 ημέρες αδ. οδ.|6|4|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+91|ΕΠΗΟ|Μη χρήση κράνους (ΕΠΗΟ)|44§12|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+92|ΕΠΗΟ|Οδήγηση ΕΠΗΟ σε οδό με όριο >50χλμ/ω|24§12β|350|-|6|0|0|0|Πρόστιμο μόνο (Ε3-Α)
+93|ΕΠΗΟ|Ταχύτητα ΕΠΗΟ >35χλμ/ω (οδηγός)|24§12α|150|-|3|0|0|0|Πρόστιμο μόνο (Ε2-Α)
+94|ΕΠΗΟ|Ταχύτητα ΕΠΗΟ >35χλμ/ω (ιδιοκτήτης)|24§12α|350|-|6|0|0|0|Πρόστιμο μόνο (Ε3-Α)
+95|έγγραφα|Στέρηση άδειας – Ε.Ι.Χ.|98§4αβ|700|1 έτος αδ. οδ. + 30 ημ. στοιχ. κυκλ.|7|0|0|0|Αφαίρεση άδειας οδήγησης + στοιχ. κυκλοφορίας (Ε4)
+96|έγγραφα|Στέρηση άδειας – Ε.Δ.Χ. / Λεωφορεία|98§4αγ|1000|1 έτος αδ. οδ. + 30 ημ. στοιχ. κυκλ.|7|0|0|0|Αφαίρεση άδειας οδήγησης + στοιχ. κυκλοφορίας (Ε4)
+97|έγγραφα|Στέρηση άδειας – Μοτοσικλέτα / Μοτοποδήλατο|98§4αα|500|1 έτος αδ. οδ. + 30 ημ. στοιχ. κυκλ.|7|0|0|0|Αφαίρεση άδειας οδήγησης + στοιχ. κυκλοφορίας (Ε4)
+98|έγγραφα|Οδήγηση με ληγμένη άδεια|99§2|150|Μέχρι ανανέωσης|3|0|0|0|Αφαίρεση άδειας οδήγησης (Ε2-Α)
+99|έγγραφα|Παραχώρηση οδήγησης σε μη δικαιούχο|102§1|350|30 ημέρες αδ. οδ. + 30 ημ. στοιχ. κυκλ.|7|0|0|0|Αφαίρεση άδειας οδήγησης + στοιχ. κυκλοφορίας (Ε3-Β + Σ)
+100|ασφάλεια|Ανασφάλιστο – Δίκυκλα|ΠΔ 237/86|250|6 μήνες αδ. οδ. + 6 μήνες στοιχ. κυκλ.|6|0|0|0|Αφαίρεση άδειας οδήγησης + 6 μήνες στοιχ. κυκλοφορίας
+101|ασφάλεια|Ανασφάλιστο – Ι.Χ.Ε. / Ι.Χ.Φ. / Α.Μ. / Μ.Ε.|ΠΔ 237/86|500|6 μήνες αδ. οδ. + 6 μήνες στοιχ. κυκλ.|6|0|0|0|Αφαίρεση άδειας οδήγησης + 6 μήνες στοιχ. κυκλοφορίας
+102|ασφάλεια|Ανασφάλιστο – Φ.Δ.Χ. / Λεωφορεία|ΠΔ 237/86|1000|6 μήνες αδ. οδ. + 6 μήνες στοιχ. κυκλ.|7|0|0|0|Αφαίρεση άδειας οδήγησης + 6 μήνες στοιχ. κυκλοφορίας
+103|ασφάλεια|Εμπλοκή σε ατύχημα χωρίς ασφάλιση|ΠΔ 237/86|250|2 χρόνια αδ. οδ. + 2 χρόνια στοιχ. κυκλ.|7|0|0|0|Αφαίρεση άδειας οδήγησης + 2 χρόνια στοιχ. κυκλοφορίας
+104|ασφάλεια|Μη χρήση ζώνης ασφαλείας (οδηγός)|16§5|350|30 ημέρες αδ. οδ.|6|0|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+105|ασφάλεια|Μη χρήση ζώνης ασφαλείας (επιβάτης)|16§5|150|-|3|0|0|0|Πρόστιμο μόνο (Ε2-Α)
+106|ασφάλεια|Έλλειψη ζώνης σε Ι.Χ.Ε. ή Φορτηγό ≤3,5τ.|85§17|150|Ακινητοποίηση|3|0|0|0|Ακινητοποίηση μέχρι αποκατάστασης
+107|ασφάλεια|Χωρίς ΚΤΕΟ – οδηγός (λοιπά οχήματα)|90§3-4 (Ε2-Β)|150|20 ημέρες αδ. οδ.|4|0|0|0|Αφαίρεση άδειας οδήγησης (οδηγός, Ε2-Β)
+108|ασφάλεια|Χωρίς ΚΤΕΟ – ιδιοκτήτης (λοιπά οχήματα)|90§3-4 (Ε2-Β)|150|-|4|0|0|0|Πρόστιμο (ιδιοκτήτης, Ε2-Β)
+109|ασφάλεια|Χωρίς ΚΤΕΟ – οδηγός (Ε.Δ.Χ./ασθενοφόρο/φορτηγό >3,5τ./λεωφορείο)|90§3-4 (Ε3-Β)|350|30 ημέρες αδ. οδ.|6|0|0|0|Αφαίρεση άδειας οδήγησης (οδηγός, Ε3-Β)
+110|ασφάλεια|Χωρίς ΚΤΕΟ – ιδιοκτήτης (Ε.Δ.Χ./ασθενοφόρο/φορτηγό >3,5τ./λεωφορείο)|90§3-4 (Ε3-Β)|350|30 ημέρες στοιχ. κυκλ.|6|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας (ιδιοκτήτης, Ε3-Β)
+111|αλκοόλ|Αλκοόλ 0,50-0,80 (γενικός)|46§7α|350|30 ημέρες αδ. οδ.|6|7|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+112|αλκοόλ|Αλκοόλ 0,80-1,10 (γενικός)|46§7β|700|90 ημέρες αδ. οδ.|7|9|0|0|Αφαίρεση άδειας οδήγησης (Ε4)
+113|αλκοόλ|Αλκοόλ >1,10 (γενικός)|46§7γ|1200|180 ημέρες αδ. οδ. + 180 ημ. στοιχ. κυκλ.|7|9|1|0|Αφαίρεση άδειας + στοιχ. κυκλ. + ΠΛΗΜΜΕΛΗΜΑ (φυλάκιση ≥2 μήνες)
+114|αλκοόλ|Άρνηση αλκοολομέτρησης|46§6|1200|180 ημέρες αδ. οδ. + 180 ημ. στοιχ. κυκλ.|7|9|1|0|Τεκμαρτό αλκοόλ >1,10 + ΠΛΗΜΜΕΛΗΜΑ (Ε4)
+115|αλκοόλ|Οδήγηση υπό τοξικές ουσίες|46§8|Ποινικές κυρώσεις|3-6 μήνες αδ. οδ.|8|0|1|0|Φυλάκιση ≥2 μήνες + χρηματική ποινή ≥200€ + ΠΛΗΜΜΕΛΗΜΑ
+116|επαγγελματικά|Αλκοόλ 0,20-0,80 (επαγγελματίες)|ΚΥΑ 43500/5691/2002|350|30 ημέρες αδ. οδ.|6|7|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+117|επαγγελματικά|Αλκοόλ 0,80-1,10 (επαγγελματίες)|ΚΥΑ 43500/5691/2002|700|90 ημέρες αδ. οδ.|7|9|0|0|Αφαίρεση άδειας οδήγησης (Ε4)
+118|επαγγελματικά|Αλκοόλ >1,10 (επαγγελματίες)|ΚΥΑ 43500/5691/2002|1200|180 ημέρες αδ. οδ. + 180 ημ. στοιχ. κυκλ.|7|9|1|0|Αφαίρεση άδειας + στοιχ. κυκλ. + ΠΛΗΜΜΕΛΗΜΑ (Ε4)
+119|υποτροπή|Ερυθρός – 2η υποτροπή (χωρίς ατύχημα)|110§3α|1000|180 ημέρες αδ. οδ.|6|0|0|0|2η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+120|υποτροπή|Ερυθρός – 3η υποτροπή (χωρίς ατύχημα)|110§4α|2000|1 έτος αδ. οδ.|7|0|0|0|3η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+121|υποτροπή|Ερυθρός με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.|7|0|0|0|2η φορά σε 5 έτη με ατύχημα — αφαίρεση άδειας οδήγησης
+122|υποτροπή|STOP/P-29 – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.|6|0|0|0|2η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+123|υποτροπή|STOP/P-29 – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.|7|0|0|0|3η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+124|υποτροπή|STOP/P-29 με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.|7|0|0|0|2η φορά σε 5 έτη με ατύχημα — αφαίρεση άδειας οδήγησης
+125|υποτροπή|ΛΕΑ – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.|6|0|0|0|2η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+126|υποτροπή|ΛΕΑ – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.|7|0|0|0|3η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+127|έγγραφα|Εισαγωγή σε κυκλοφορία μη νόμιμου μέσου|5§2|150|-|3|0|0|0|Καμία αφαίρεση (Ε2-Α)
+131|δίκυκλα|Οδήγηση μοτοσικλέτας χωρίς φώτα ημέρας|39§4|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+132|κίνηση|Παραβίαση φώτων ομίχλης|40§2|30|-|1|0|0|0|Καμία αφαίρεση
+133|κίνηση|Παραβίαση ηχητικών προειδοποιήσεων|41|30|-|1|0|0|0|Καμία αφαίρεση
+134|κίνηση|Αντικανονικό άνοιγμα θυρών|34|30|-|1|0|0|0|Καμία αφαίρεση
+135|φορτηγά|Παραβίαση κανόνων φόρτωσης (γενικά)|36|150|-|3|0|0|0|Πρόστιμο 150€. Ελαφρά: +50-250€ στον υπεύθυνο φόρτωσης
+136|κίνηση|Μεταφορά επιβατών πέραν ορίου (βασική)|37|30|10 ημέρες αδ. οδ.|2|0|0|0|Αφαίρεση άδειας οδήγησης (Ε1-Β)
+141|υποτροπή|Ταχύτητα >50χλμ/ω – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.|6|9|0|0|2η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+142|υποτροπή|Ταχύτητα >50χλμ/ω – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.|7|9|0|0|3η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+144|υποτροπή|Αλκοόλ >1,10 g/l – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.|7|9|1|0|2η φορά σε 5 έτη + ΠΛΗΜΜΕΛΗΜΑ
+145|υποτροπή|Αλκοόλ >1,10 g/l – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.|7|9|1|0|3η φορά σε 5 έτη + ΠΛΗΜΜΕΛΗΜΑ
+146|υποτροπή|Αλκοόλ >1,10 g/l με ατύχημα – 2η υποτροπή|110§3β|2000|7 έτη αδ. οδ.|7|9|1|0|2η φορά σε 5 έτη με ατύχημα (εξαίρεση: 7 έτη) + ΠΛΗΜΜΕΛΗΜΑ
+152|υποτροπή|Σιδηροδρομική διάβαση με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.|7|9|1|0|2η φορά σε 5 έτη με ατύχημα + ΠΛΗΜΜΕΛΗΜΑ
+155|υποτροπή|Εγκατάλειψη ατυχήματος με ατύχημα – 2η υποτροπή|110§3β|2000|7 έτη αδ. οδ.|7|0|1|0|2η φορά σε 5 έτη με ατύχημα (εξαίρεση: 7 έτη) + ΠΛΗΜΜΕΛΗΜΑ
+158|υποτροπή|Παραβίαση ακινητοποίησης με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.|7|0|1|0|2η φορά σε 5 έτη με ατύχημα + ΠΛΗΜΜΕΛΗΜΑ
+159|υποτροπή|Χρήση κινητού με ατύχημα – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.|7|0|0|0|2η φορά σε 5 έτη με ατύχημα — αφαίρεση άδειας οδήγησης
+160|υποτροπή|Οδήγηση χωρίς άδεια – 2η υποτροπή|110§3β|2000|4 έτη αδ. οδ.|7|0|1|0|2η φορά σε 5 έτη + ΠΛΗΜΜΕΛΗΜΑ
+161|υποτροπή|Οδήγηση χωρίς άδεια – 3η υποτροπή|110§4β|4000|8 έτη αδ. οδ.|7|0|1|0|3η φορά σε 5 έτη + ΠΛΗΜΜΕΛΗΜΑ
+162|υποτροπή|Μη χρήση ζώνης / κράνους – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.|6|0|0|0|2η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+163|υποτροπή|Μη χρήση ζώνης / κράνους – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.|7|0|0|0|3η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+164|υποτροπή|Μη χρήση παιδικών καθισμάτων – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.|6|0|0|0|2η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+165|υποτροπή|Μη χρήση παιδικών καθισμάτων – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.|7|0|0|0|3η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+166|υποτροπή|Στάθμευση σε ΑμεΑ / ράμπα – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.|6|0|0|0|2η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+167|υποτροπή|Στάθμευση σε ΑμεΑ / ράμπα – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.|7|0|0|0|3η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+169|φορτηγά|Ακατάλληλη φόρτωση (οδηγός)|ν.3446/2006 §1.1|750|Ακινητοποίηση|6|0|0|0|Πρόστιμο οδηγού + ακινητοποίηση
+170|φορτηγά|Ακατάλληλη φόρτωση (υπεύθυνος φόρτωσης)|ν.3446/2006 §1.1|1500|-|6|0|0|0|Πρόστιμο υπεύθυνου φόρτωσης
+171|φορτηγά|Υπέρβαρο 5% (ιδιοκτήτης)|ν.3446/2006 §1.2α|30|-|1|0|0|0|Πρόστιμο ιδιοκτήτη. Ελαφρά: +50-250€ υπεύθ. φόρτωσης
+172|φορτηγά|Υπέρβαρο 5-10% (ιδιοκτήτης)|ν.3446/2006 §1.2β|60|-|1|0|0|0|Πρόστιμο ιδιοκτήτη. Ελαφρά: +50-250€ υπεύθ. φόρτωσης
+173|φορτηγά|Υπέρβαρο 10-20% (ιδιοκτήτης)|ν.3446/2006 §1.2γ|500|-|3|0|0|0|Πρόστιμο ιδιοκτήτη
+174|φορτηγά|Υπέρβαρο >20% (ιδιοκτήτης)|ν.3446/2006 §1.2δ|3000|4 μήνες στοιχ. κυκλ.|6|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+175|φορτηγά|Υπέρβαρο >20% (οδηγός)|ν.3446/2006 §1.2δ|3000|-|6|0|0|0|Πρόστιμο οδηγού
+176|φορτηγά|Χωρίς ΚΤΕΟ (ιδιοκτήτης)|ν.3446/2006 §1.3|300|Μέχρι έκδοσης ΚΤΕΟ|3|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+177|φορτηγά|Χωρίς ΚΤΕΟ (οδηγός)|ν.3446/2006 §1.3|300|-|3|0|0|0|Πρόστιμο οδηγού
+178|φορτηγά|Υπέρβαση διαστάσεων (ιδιοκτήτης)|ν.3446/2006 §1.4|1000|Ακινητοποίηση|4|0|0|0|Πρόστιμο + ακινητοποίηση
+179|φορτηγά|Κυκλοφορία σε απαγορευμένες ώρες (οδηγός)|ν.3446/2006 §1.5|200|Ακινητοποίηση|3|0|0|0|Πρόστιμο + ακινητοποίηση
+180|φορτηγά|Χωρίς ΚΕΚ (ιδιοκτήτης)|ν.3446/2006 §1.6|150|-|3|0|0|0|Πρόστιμο ιδιοκτήτη. Ελαφρά: +50-250€ υπεύθ. φόρτωσης
+181|φορτηγά|Χωρίς άδεια κυκλοφορίας (ιδιοκτήτης)|ν.3446/2006 §1.9|8000|Αφαίρεση στοιχ. κυκλ.|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+182|φορτηγά|Χωρίς άδεια κυκλοφορίας (οδηγός)|ν.3446/2006 §1.9|1000|-|7|0|0|0|Πρόστιμο οδηγού
+183|φορτηγά|Μετάθεση πινακίδων (ιδιοκτήτης)|ν.3446/2006 §1.11|5000|6 μήνες στοιχ. κυκλ.|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+184|φορτηγά|Οδήγηση χωρίς κατάλληλη άδεια (οδηγός)|ν.3446/2006 §1.13|2000|2 μήνες αδ. οδ.|7|0|0|0|Πρόστιμο + αφαίρεση άδειας οδήγησης
+185|φορτηγά|Οδήγηση χωρίς κατάλληλη άδεια (ιδιοκτήτης)|ν.3446/2006 §1.13|2000|-|7|0|0|0|Πρόστιμο ιδιοκτήτη
+186|φορτηγά|Μη ανανέωση άδειας κυκλοφορίας (Ι.Χ.Φ.)|ν.3446/2006 §1.10|200|Μέχρι έκδοσης νέας άδειας|3|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+187|φορτηγά|Παράνομη αλλαγή κατηγορίας (Ι.Χ.Φ. δημοσίας χρήσης)|ν.3446/2006 §1.16|5000|2 μήνες στοιχ. κυκλ.|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+188|φορτηγά|Μεταφορά επικίνδυνων εμπορευμάτων χωρίς ADR|ν.3446/2006 §1.26|3000|-|6|0|0|0|Πρόστιμο ιδιοκτήτη
+189|φορτηγά|Υπέρβαση ωραρίου οδήγησης (30-60 λεπτά)|ν.3446/2006 §1.49αα|80|-|1|0|0|0|Πρόστιμο οδηγού. Ελαφρά: +50-250€ υπεύθ. φόρτωσης
+190|φορτηγά|Υπέρβαση ωραρίου οδήγησης (60-120 λεπτά)|ν.3446/2006 §1.49αβ|200|-|2|0|0|0|Πρόστιμο οδηγού. Ελαφρά: +50-250€ υπεύθ. φόρτωσης
+191|φορτηγά|Υπέρβαση ωραρίου οδήγησης (>120 λεπτά)|ν.3446/2006 §1.49αγ|400|Ακινητοποίηση 4 ωρών|3|0|0|0|Πρόστιμο οδηγού + ακινητοποίηση
+192|φορτηγά|Οδήγηση χωρίς διάλειμμα|ν.3446/2006 §1.49β|200|-|3|0|0|0|Πρόστιμο οδηγού. Ελαφρά: +50-250€ υπεύθ. φόρτωσης
+193|φορτηγά|Μη ύπαρξη ηλεκτρονικά αναγνώσιμου σήματος (Ι.Χ.Φ. δημοσίας χρήσης)|ν.3446/2006 §1.50|3000|-|6|0|0|0|Πρόστιμο ιδιοκτήτη
+194|φορτηγά|Εθνικές μεταφορές με όχημα διεθνών μεταφορών|ν.3446/2006 §1.17|1500|-|5|0|0|0|Πρόστιμο ιδιοκτήτη
+195|φορτηγά|Μη τήρηση όρων συνδυασμένης μεταφοράς|ν.3446/2006 §1.24|5000|-|7|0|0|0|Πρόστιμο ιδιοκτήτη
+196|φορτηγά|Παράβαση κανόνων ενδομεταφορών (Καν. 3118/93)|ν.3446/2006 §1.25|5000|-|7|0|0|0|5.000€ ιδιοκτήτη/μισθωτή + 5.000€ υπεύθυνου φόρτωσης
+197|φορτηγά|Παραποίηση αριθμού πλαισίου (Ι.Χ.Φ.)|ν.3446/2006 §1.7|1000|Οριστική αφαίρεση στοιχ. κυκλ.|7|0|0|0|Πρόστιμο + οριστική αφαίρεση στοιχείων κυκλοφορίας
+198|φορτηγά|Μη απογραφή / ταξινόμηση (Ι.Χ.Φ.)|ν.3446/2006 §1.8|1000|Μέχρι νόμιμης απογραφής|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+199|φορτηγά|Παραχώρηση χρήσης Ι.Χ.Φ. σε τρίτο (ιδιοκτήτης)|ν.3446/2006 §1.30|3000|2 μήνες στοιχ. κυκλ.|6|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+200|φορτηγά|Μεταφορά για λογαριασμό τρίτων (Ι.Χ.Φ.)|ν.3446/2006 §1.31|5000|2 μήνες στοιχ. κυκλ.|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+201|φορτηγά|Μεταφορά αγαθών >4.000kg απευθείας σε πελάτη (έμπορος)|ν.3446/2006 §1.32|3000|2 μήνες στοιχ. κυκλ.|6|0|0|0|Πρόστιμο ιδιοκτήτη + αφαίρεση στοιχείων κυκλοφορίας
+202|φορτηγά|Φόρτωση χωματουργικού χωρίς σύμβαση έργου|ν.3446/2006 §1.33|1500|2 μήνες στοιχ. κυκλ.|5|0|0|0|Πρόστιμο ιδιοκτήτη + αφαίρεση στοιχείων κυκλοφορίας
+203|φορτηγά|Μεταφορά προσώπων με Ι.Χ.Φ.|ν.3446/2006 §1.34|200|-|3|0|0|0|Πρόστιμο ιδιοκτήτη
+204|φορτηγά|Προσάρτηση άλλου ρυμουλκουμένου εκτός αδείας|ν.3446/2006 §1.35|5000|-|7|0|0|0|Πρόστιμο ιδιοκτήτη
+205|φορτηγά|Χωρίς εγγραφή στοιχείων αμαξώματος (>4.000kg)|ν.3446/2006 §1.36|200|-|3|0|0|0|Πρόστιμο ιδιοκτήτη
+206|φορτηγά|Κυκλοφορία Ι.Χ.Φ. ≤4.000kg κατά παρ. άρθρου 26 ν.1959/91|ν.3446/2006 §1.37|150|-|3|0|0|0|Πρόστιμο ιδιοκτήτη
+207|φορτηγά|Φόρτωση/εκφόρτωση καυσίμων σε ακατάλληλο χώρο (βυτιοφόρο)|ν.3446/2006 §1.38|5000|6 μήνες στοιχ. κυκλ.|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+208|φορτηγά|Μεταφορά βυτιοφόρου εταιρείας πετρελαιοειδών κατά παράβαση 4§1η|ν.3446/2006 §1.39|5000|6 μήνες στοιχ. κυκλ.|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+209|φορτηγά|Μεταφορά καυσίμων χωρίς συνοδευτικά έγγραφα|ν.3446/2006 §1.40|5000|6 μήνες στοιχ. κυκλ.|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+210|φορτηγά|Μεταφορά καυσίμων διαφορετικών από την άδεια κυκλοφορίας|ν.3446/2006 §1.41|5000|6 μήνες στοιχ. κυκλ.|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας
+211|φορτηγά|Διεθνείς μεταφορές Ι.Χ.Φ. κατά παράβαση υ.α. Φ205/68/1/1983|ν.3446/2006 §1.42|1000|-|4|0|0|0|Πρόστιμο ιδιοκτήτη
+212|φορτηγά|Μεταφορά εμπορευμάτων χωρίς συνοδευτικά έγγραφα|ν.3446/2006 §1.43|600|-|3|0|0|0|Πρόστιμο ιδιοκτήτη + οδηγού (600€ έκαστος)
+213|φορτηγά|Διεθνής μεταφορά για τρίτους χωρίς CMR|ν.3446/2006 §1.44|600|-|3|0|0|0|Πρόστιμο ιδιοκτήτη/μισθωτή
+214|φορτηγά|Χρήση πλαστής/παραχαραγμένης άδειας ΕΔΥΜ|ν.3446/2006 §1.45|3000|Απαγόρευση εισόδου 1 έτος|7|0|0|0|Πρόστιμο + απαγόρευση εισόδου οχήματος στη χώρα για 1 έτος
+215|φορτηγά|Εθνική μεταφορά με φορτηγό τρίτης χώρας|ν.3446/2006 §1.46|5000|Απαγόρευση εισόδου 6 μήνες|7|0|0|0|5.000€ οδηγού + υπευθύνου φόρτωσης, απαγόρευση εισόδου 6 μήνες
+216|φορτηγά|Χρήση πλαστής άδειας διμερούς/τράνζιτ/τριγωνικής|ν.3446/2006 §1.47|3000|Απαγόρευση εισόδου 1 έτος|7|0|0|0|Πρόστιμο + απαγόρευση εισόδου 1 έτος
+217|φορτηγά|Διεθνής μεταφορά από μη κοινοτικό μεταφορέα χωρίς άδεια|ν.3446/2006 §1.48|3000|Απαγόρευση εισόδου 1 έτος|7|0|0|0|Πρόστιμο ιδιοκτήτη + οδηγού (3.000€ έκαστος)
+218|φορτηγά|Κυκλοφορία ρυμουλκούμενου Ο1/Ο2 χωρίς άδεια/πινακίδες|ν.5290/2026 §14|Κυρώσεις άρθρων 92 & 94 ΚΟΚ|-|7|0|0|0|Επιβάλλονται οι κυρώσεις των άρθρων 92 & 94 ΚΟΚ
+219|επαγγελματικά|Μη προειδοποίηση εκκίνησης λεωφορείου/ταξί|29§2|30|40 ημέρες αδ. οδ. (Σ)|2|0|0|0|Αφαίρεση άδειας οδήγησης (Ε1-Α + Σ)
+220|επαγγελματικά|Μη προσέγγιση σε στάση λεωφορείου/ταξί|29§3|30|40 ημέρες αδ. οδ. (Σ)|2|0|0|0|Αφαίρεση άδειας οδήγησης (Ε1-Α + Σ)
+221|επαγγελματικά|Οδήγηση ταξί/λεωφορείου πέραν χρονικών ορίων|17§5|150|20 ημέρες αδ. οδ.|3|0|0|0|Αφαίρεση άδειας οδήγησης (Ε2-Α)
+222|επαγγελματικά|Παραβίαση ειδικών κανόνων Ε.Δ.Χ. (έλλειψη ταξιμέτρου)|98§4αγ|1000|1 έτος αδ. οδ.|7|0|0|0|Αφαίρεση άδειας οδήγησης (Ε4)
+223|επαγγελματικά|Οδήγηση ταξί/λεωφορείου χωρίς ειδική άδεια|98§4αγ|1000|1 έτος αδ. οδ.|7|0|0|0|Αφαίρεση άδειας οδήγησης (Ε4)
+224|επαγγελματικά|Μη τήρηση υποχρεώσεων οδηγού Ε.Δ.Χ. (ευγένεια)|16§7|150|40 ημέρες (Σ)|4|0|0|0|Αφαίρεση άδειας οδήγησης (Ε2-Α + Σ — μόνο οι 40 ημέρες της Σ)
+225|επαγγελματικά|Μη χρήση ζώνης ασφαλείας (οδηγός ταξί/λεωφορείου)|16§5|350|30 ημέρες αδ. οδ.|6|0|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+226|επαγγελματικά|Μη χρήση ζώνης ασφαλείας (επιβάτης ταξί/λεωφορείου)|16§5|150|-|3|0|0|0|Πρόστιμο μόνο (Ε2-Α)
+227|ασφάλεια|Χρήση κινητού / ακουστικών (οδηγός Ι.Χ.)|17§2|350|30 ημέρες αδ. οδ.|6|4|0|0|Αφαίρεση άδειας οδήγησης (Ε3-Β)
+228|υποτροπή|Χρήση κινητού – 2η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.|6|0|0|0|2η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+229|υποτροπή|Χρήση κινητού – 3η υποτροπή|110§4α|2000|1 έτος αδ. οδ.|7|0|0|0|3η φορά σε 5 έτη — αφαίρεση άδειας οδήγησης
+230|σήμανση|Παραβίαση Ρ-15, Ρ-16, Ρ-17 (πεζοί, ζωήλατα, χειράμαξες)|7§11στ|150|-|3|0|0|0|Καμία αφαίρεση (Ε2-Α)
+231|κίνηση|Παράλειψη τοποθέτησης μέσων σήμανσης έργων|13§4|1500|-|7|0|1|0|Διοικητικό πρόστιμο 1.500€ + φυλάκιση έως 12 μήνες (Ε4)
+232|κίνηση|Παράνομη εγκατάσταση πινακίδων / σηματοδοτών|14§9|1500|-|7|0|1|0|Διοικητικό πρόστιμο 1.500€ + φυλάκιση έως 12 μήνες (Ε4)
+233|κίνηση|Παράνομη πρόσβαση σε αυτοκινητόδρομο|33§12|150|-|5|0|1|0|Διοικητικό πρόστιμο 150€ (Ε2-Α) + φυλάκιση έως 12 μήνες
+234|κίνηση|Παράνομη κατάληψη οδού / πεζοδρομίου|52§6|350|-|4|0|0|0|Καμία αφαίρεση (Ε3-Α)
+235|κίνηση|Παράνομοι αγώνες σε οδούς|53§4|50000|-|8|0|1|0|Πρόστιμο 50.000€ + απαγόρευση διοργάνωσης αγώνων έως 5 έτη (Ε4)
+236|ασφάλεια|Χρήση φώτων ομίχλης χωρίς λόγο|73§3|30|-|1|0|0|0|Καμία αφαίρεση (Ε1-Α)
+240|υποτροπή|Οδήγηση χωρίς άδεια – 1η υποτροπή|110§3β|2000|4 έτη αδ. οδ.|8|0|1|0|2η φορά σε 5 έτη — αφαίρεση άδειας για 4 έτη
+241|υποτροπή|Οδήγηση χωρίς άδεια – 2η υποτροπή|110§4β|4000|8 έτη αδ. οδ.|8|0|1|0|3η φορά σε 5 έτη — αφαίρεση άδειας για 8 έτη
+242|υποτροπή|Κινητό τηλέφωνο – 1η υποτροπή|110§3α|1000|180 ημέρες αδ. οδ.|7|0|0|0|2η φορά σε 5 έτη — αφαίρεση άδειας 180 ημέρες
+243|υποτροπή|Κινητό τηλέφωνο – 2η υποτροπή|110§4α|2000|1 έτος αδ. οδ.|7|0|0|0|3η φορά σε 5 έτη — αφαίρεση άδειας 1 έτος
+245|φορτηγά|Παραποίηση πινακίδων (Ι.Χ.Φ.)|ν.3446/2006 §1.11|5000|Μέχρι τη χορήγηση νέων πινακίδων|7|0|0|0|Πρόστιμο ιδιοκτήτη + αφαίρεση στοιχείων μέχρι χορήγηση νέων πινακίδων
+246|φορτηγά|Παραποίηση πινακίδων (ιδιοκτήτης)|ν.3446/2006 §1.11|5000|Μέχρι τη χορήγηση νέων πινακίδων|7|0|0|0|Πρόστιμο + αφαίρεση στοιχείων κυκλοφορίας μέχρι χορήγηση νέων πινακίδων
+247|ΕΠΗΟ|Ταχύτητα ΕΠΗΟ 26-35χλμ/ω (οδηγός)|24§12α|30|-|1|0|0|0|Πρόστιμο μόνο (Ε1-Α) — άρθρο 75 ν.5322/2026
+248|ΕΠΗΟ|Ταχύτητα ΕΠΗΟ 26-35χλμ/ω (ιδιοκτήτης)|24§12α|150|-|3|0|0|0|Πρόστιμο μόνο (Ε2-Α) — άρθρο 75 ν.5322/2026
+249|ΕΠΗΟ|Κίνηση ΕΠΗΟ εκτός ποδηλατόδρομου σε οδό με ποδηλατόδρομο|44§5|30|-|1|0|0|0|Πρόστιμο μόνο (Ε1-Α)
+250|ΕΠΗΟ|Οδήγηση ΕΠΗΟ από ανήλικο <17 ετών|44§10|150|Ακινητοποίηση 20 ημερών (αν ιδιωτικής χρήσης)|3|0|0|0|Πρόστιμο (Ε2-Α) + υποχρεωτική ακινητοποίηση 20 ημερών αν ιδιωτικής χρήσης
+251|ΕΠΗΟ|Μεταφορά επιβάτη με ΕΠΗΟ|44§4|150|-|3|0|0|0|Πρόστιμο μόνο (Ε2-Α)
+252|ΕΠΗΟ|Μη παραχώρηση προτεραιότητας σε πεζό (ΕΠΗΟ)|44§14,3|30|-|1|0|0|0|Πρόστιμο μόνο (Ε1-Α)
+253|ΕΠΗΟ|Μη έγκαιρη προειδοποίηση αλλαγής κατεύθυνσης (ΕΠΗΟ)|44§13|30|-|1|0|0|0|Πρόστιμο μόνο (Ε1-Α)
+254|ΕΠΗΟ|Μη χρήση ανακλαστικού γιλέκου τη νύχτα (ΕΠΗΟ)|44§9|30|-|1|0|0|0|Πρόστιμο μόνο (Ε1-Α)
+255|ΕΠΗΟ|Ρυμούλκηση / μεταφορά αντικειμένων με ΕΠΗΟ|44§1α,β,γ|30|-|1|0|0|0|Πρόστιμο μόνο (Ε1-Α)
+256|ΕΠΗΟ|Κίνηση ΕΠΗΟ ανά δύο ή περισσότερα παράλληλα|44§1δ|30|-|1|0|0|0|Πρόστιμο μόνο (Ε1-Α)
+257|ΕΠΗΟ|Οδηγός ΕΠΗΟ χωρίς έγγραφο ταυτοποίησης / ασφαλιστήριο|103§1|30|-|1|0|0|0|Πρόστιμο μόνο (Ε1-Α)
+258|ΕΠΗΟ|Ανασφάλιστο ΕΠΗΟ|27Α ν.4784/2021|250|-|6|0|0|0|250€ στον οδηγό ΚΑΙ 250€ στον ιδιοκτήτη
+259|έγγραφα|Οδηγός χωρίς τα απαιτούμενα έγγραφα|103§1|30|-|1|0|0|0|30€ ανά έγγραφο που λείπει (Ε1-Α) — τα κατέχει νόμιμα`;
 const CATS=['στάθμευση','σήμανση','κίνηση','ταχύτητα','φορτηγά','δίκυκλα','ΕΠΗΟ','έγγραφα','ασφάλεια','αλκοόλ','επαγγελματικά','υποτροπή'];
 const CATALOG=(()=>{
   const seen=new Set(),out=[];
   CAT_RAW.split('\n').forEach(line=>{
-    const p=line.split('|');if(p.length<6)return;
-    const v={id:+p[0],cat:p[1],name:p[2],article:p[3],fine:p[4],suspend:p[5]};
+    const p=line.split('|');if(p.length<11)return;
+    const v={id:+p[0],cat:p[1],name:p[2],article:p[3],fine:p[4],suspend:p[5],sev:+p[6],pts:+p[7],crim:p[8]==='1',half:p[9]==='1',details:p[10]};
     const k=fold(v.article)+'::'+fold(v.name);
     if(seen.has(k))return;seen.add(k);
-    v.hay=fold(v.name+' '+v.cat);
+    v.sigma=/\(Σ\)|από Σ|κατηγορία Σ|\+ Σ/.test(v.details+' '+v.suspend);
+    v.hay=fold(v.name+' '+v.cat+' '+v.details);
     v.artKey=fold(v.article).replace(/[§\s.]/g,'');
     v.nameKey=fold(v.name);
     out.push(v);
   });
-  return out;
+  return out.sort((a,b)=>a.id-b.id);
 })();
 function searchCatalog(query,cat,limit){
   const qf=normText(query),tokens=qf?qf.split(/\s+/).filter(Boolean):[];
@@ -821,15 +871,15 @@ function searchCatalog(query,cat,limit){
       if(v.nameKey.startsWith(s0))return 0;
       if(qKey.length>=2&&v.artKey.startsWith(qKey))return 1;
       if(v.nameKey.includes(s0))return 2;
-      if(v.artKey.includes(qKey))return 3;
+      if(qKey.length>=2&&v.artKey.includes(qKey))return 3;
       return 4;
     };
-    list=list.slice().sort((a,b)=>score(a)-score(b)||a.id-b.id);
-  }
+    list=list.slice().sort((a,b)=>score(a)-score(b)||b.sev-a.sev||a.id-b.id);
+  }else if(!cat){list=list.slice().sort((a,b)=>b.sev-a.sev||a.id-b.id);}
   return list.slice(0,limit||8);
 }
 
-/* ================= ΚΑΤΑΛΟΓΟΣ ΥΠΗΡΕΣΙΕΩΝ (επίσημα στοιχεία ΕΛ.ΑΣ.) ================= */
+/* ================= ΚΑΤΑΛΟΓΟΣ ΥΠΗΡΕΣΙΕΩΝ (ΕΛ.ΑΣ.) ================= */
 const SVC_URL={
  gadatt:'https://www.astynomia.gr/epikoinonia/g-a-d-attikis/geniki-astynomiki-diefthynsi-attikis/',
  thtro:'https://www.astynomia.gr/epikoinonia/g-a-d-thessalonikis/diefthynsi-trochaias-kai-tmimata-trochaias-thessalonikis/',
@@ -841,48 +891,49 @@ const SVC_URL={
  voi:'https://www.astynomia.gr/anazitisi-ypiresion/nomos-voiotias/',
  fok:'https://www.astynomia.gr/anazitisi-ypiresion/nomos-fokidas/'
 };
-const SVC_RAW=`Τροχαία|Α΄ Τμήμα Τροχαίας Αυτοκινητοδρόμων Π.Α.Θ.Ε. Αττικής|Βόρειος παράδρομος Ν.Ε.Ο.Α.Κ. – Βλυχάδα|191 00|Μέγαρα|Αττικής|gadatt
-Τροχαία|Διεύθυνση Τροχαίας Αττικής|Θ. Δηληγιάννη 24–26|104 38|Αθήνα|Αττικής|gadatt
-Αστυνομικό Τμήμα|Α΄ Αστυνομικό Τμήμα Πατρών|Πανεπιστημίου 138|261 10|Πάτρα|Αχαΐας|ach
-Αστυνομικό Τμήμα|Γ΄ Αστυνομικό Τμήμα Πατρών|Φιλ. Ολυμπιάδος & Νικοπόλεως|261 10|Πάτρα|Αχαΐας|ach
-Τροχαία|Τμήμα Τροχαίας Πατρών|Πανεπιστημίου 138|264 43|Πάτρα|Αχαΐας|ach
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Μετεώρων|Πίνδου & Ιωαννίνων|422 00|Καλαμπάκα|Τρικάλων|tri
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Πύλης|25ης Μαρτίου 3 & Ανθέων|420 32|Πύλη|Τρικάλων|tri
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Φαρκαδόνας|25ης Μαρτίου 26|420 31|Φαρκαδόνα|Τρικάλων|tri
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Αλεξάνδρειας|Δ. Βετσόπουλου 89|593 00|Αλεξάνδρεια|Ημαθίας|ima
-Αστυνομικός Σταθμός|Αστυνομικός Σταθμός Πλατέος Ημαθίας||590 32|Πλατύ|Ημαθίας|ima
-Τροχαία|Τμήμα Τροχαίας Βέροιας|Σ. Πέτρουλα 1|591 00|Βέροια|Ημαθίας|ima
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Βόλβης|Παύλου Μελά 2|570 21|Ασπροβάλτα|Θεσσαλονίκης|thtro
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Δέλτα|Πατριάρχου Γρηγορίου Ε΄ 1Β|574 00|Σίνδος|Θεσσαλονίκης|thtro
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Θέρμης|Πλατεία Παραμάνα 42|570 01|Θέρμη|Θεσσαλονίκης|thtro
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Θερμαϊκού|25ης Μαρτίου 9|570 19|Νέοι Επιβάτες|Θεσσαλονίκης|thtro
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Καλλινδοίων||570 12|Ζαγκλιβέρι|Θεσσαλονίκης|thtro
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Λαγκαδά|Λουτρών 14|572 00|Λαγκαδάς|Θεσσαλονίκης|thtro
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Χαλκηδόνος|Αγίου Αθανασίου 33|571 00|Κουφάλια|Θεσσαλονίκης|thtro
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Ωραιοκάστρου|Λεωφόρος Θεσσαλονίκης & Ευτυχίας 2|570 13|Ωραιόκαστρο|Θεσσαλονίκης|thtro
-Αστυνομικός Σταθμός|Αστυνομικός Σταθμός Σοχού||570 02|Σοχός|Θεσσαλονίκης|thtro
-Αστυνομικός Σταθμός|Αστυνομικός Σταθμός Χαλάστρας|Πλατεία Ελευθερίας 1|573 00|Χαλάστρα|Θεσσαλονίκης|thtro
-Τροχαία|Διεύθυνση Τροχαίας Θεσσαλονίκης|Μαργαροπούλου 26|546 29|Θεσσαλονίκη|Θεσσαλονίκης|the
-Τροχαία|Τμήμα Τροχαίας Ασπροβάλτας||570 21|Ασπροβάλτα|Θεσσαλονίκης|thtro
-Τροχαία|Τμήμα Τροχαίας Αυτοκινητοδρόμων Π.Α.Θ.Ε. Θεσσαλονίκης|Σταθμός Διοδίων Νέων Μαλγάρων|573 00|Μάλγαρα|Θεσσαλονίκης|thtro
-Τροχαία|Τμήμα Τροχαίας Θέρμης|Εντός κτιρίου Δ.Α.Κ.Α.Θ.|551 03|Θεσσαλονίκη|Θεσσαλονίκης|thtro
-Τροχαία|Τμήμα Τροχαίας Λητής|13ο χλμ. Ε.Ο. Θεσσαλονίκης–Σερρών|545 00|Λητή|Θεσσαλονίκης|thtro
-Τροχαία|Τμήμα Τροχαίας Χαλκηδόνος|Κατσαντώνη 10|570 07|Χαλκηδόνα|Θεσσαλονίκης|thtro
-Τροχαία|Υποδιεύθυνση Τροχαίας Θεσσαλονίκης|Μαργαροπούλου 26|546 29|Θεσσαλονίκη|Θεσσαλονίκης|the
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Βόρειας Κυνουρίας||220 01|Παράλιο Άστρος|Αρκαδίας|ark
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Γορτυνίας||220 07|Δημητσάνα|Αρκαδίας|ark
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Μεγαλόπολης|Σταθοπούλου 37|222 00|Μεγαλόπολη|Αρκαδίας|ark
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Νότιας Κυνουρίας||223 00|Λεωνίδιο|Αρκαδίας|ark
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Αλιάρτου|Λεωφόρος Αθηνών (χωρίς αριθμό)|320 01|Αλίαρτος|Βοιωτίας|voi
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Θηβών|Διρκαίου|322 00|Θήβα|Βοιωτίας|voi
-Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Τανάγρας|Δεδάκη 27|320 09|Σχηματάρι|Βοιωτίας|voi
-Αστυνομικός Σταθμός|Τοπικός Αστυνόμος Σκουρτών||320 09|Πύλη Βοιωτίας|Βοιωτίας|voi
-Τροχαία|Τμήμα Τροχαίας Αυτοκινητοδρόμων Βοιωτίας Π.Α.Θ.Ε.|90ή χ/θ Π.Α.Θ.Ε. – Α.Κ. Θηβών|322 00|Θήβα|Βοιωτίας|voi
-Αστυνομικός Σταθμός|Αστυνομικός Σταθμός Γραβιάς||330 57|Γραβιά|Φωκίδας|fok
-Τροχαία|Τμήμα Τροχαίας Ιτέας|Νικ. Ευθυμίου 3|332 00|Ιτέα|Φωκίδας|fok`;
+const SVC_RAW=`Αττική|Αττικής|Τροχαία|Α΄ Τμήμα Τροχαίας Αυτοκινητοδρόμων Π.Α.Θ.Ε. Αττικής|Βόρειος παράδρομος Ν.Ε.Ο.Α.Κ. – Βλυχάδα|191 00|Μέγαρα|gadatt
+Αττική|Αττικής|Τροχαία|Διεύθυνση Τροχαίας Αττικής|Θ. Δηληγιάννη 24–26|104 38|Αθήνα|gadatt
+Δυτική Ελλάδα|Αχαΐας|Αστυνομικό Τμήμα|Α΄ Αστυνομικό Τμήμα Πατρών|Πανεπιστημίου 138|261 10|Πάτρα|ach
+Δυτική Ελλάδα|Αχαΐας|Αστυνομικό Τμήμα|Γ΄ Αστυνομικό Τμήμα Πατρών|Φιλ. Ολυμπιάδος & Νικοπόλεως|261 10|Πάτρα|ach
+Δυτική Ελλάδα|Αχαΐας|Τροχαία|Τμήμα Τροχαίας Πατρών|Πανεπιστημίου 138|264 43|Πάτρα|ach
+Θεσσαλία|Τρικάλων|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Μετεώρων|Πίνδου & Ιωαννίνων|422 00|Καλαμπάκα|tri
+Θεσσαλία|Τρικάλων|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Πύλης|25ης Μαρτίου 3 & Ανθέων|420 32|Πύλη|tri
+Θεσσαλία|Τρικάλων|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Φαρκαδόνας|25ης Μαρτίου 26|420 31|Φαρκαδόνα|tri
+Κεντρική Μακεδονία|Ημαθίας|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Αλεξάνδρειας|Δ. Βετσόπουλου 89|593 00|Αλεξάνδρεια|ima
+Κεντρική Μακεδονία|Ημαθίας|Αστυνομικός Σταθμός|Αστυνομικός Σταθμός Πλατέος Ημαθίας||590 32|Πλατύ|ima
+Κεντρική Μακεδονία|Ημαθίας|Τροχαία|Τμήμα Τροχαίας Βέροιας|Σ. Πέτρουλα 1|591 00|Βέροια|ima
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Βόλβης|Παύλου Μελά 2|570 21|Ασπροβάλτα|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Δέλτα|Πατριάρχου Γρηγορίου Ε΄ 1Β|574 00|Σίνδος|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Θέρμης|Πλατεία Παραμάνα 42|570 01|Θέρμη|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Θερμαϊκού|25ης Μαρτίου 9|570 19|Νέοι Επιβάτες|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Καλλινδοίων||570 12|Ζαγκλιβέρι|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Λαγκαδά|Λουτρών 14|572 00|Λαγκαδάς|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Χαλκηδόνος|Αγίου Αθανασίου 33|571 00|Κουφάλια|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Ωραιοκάστρου|Λεωφόρος Θεσσαλονίκης & Ευτυχίας 2|570 13|Ωραιόκαστρο|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικός Σταθμός|Αστυνομικός Σταθμός Σοχού||570 02|Σοχός|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Αστυνομικός Σταθμός|Αστυνομικός Σταθμός Χαλάστρας|Πλατεία Ελευθερίας 1|573 00|Χαλάστρα|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Τροχαία|Διεύθυνση Τροχαίας Θεσσαλονίκης|Μαργαροπούλου 26|546 29|Θεσσαλονίκη|the
+Κεντρική Μακεδονία|Θεσσαλονίκης|Τροχαία|Τμήμα Τροχαίας Ασπροβάλτας||570 21|Ασπροβάλτα|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Τροχαία|Τμήμα Τροχαίας Αυτοκινητοδρόμων Π.Α.Θ.Ε. Θεσσαλονίκης|Σταθμός Διοδίων Νέων Μαλγάρων|573 00|Μάλγαρα|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Τροχαία|Τμήμα Τροχαίας Θέρμης|Εντός κτιρίου Δ.Α.Κ.Α.Θ.|551 03|Θεσσαλονίκη|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Τροχαία|Τμήμα Τροχαίας Λητής|13ο χλμ. Ε.Ο. Θεσσαλονίκης–Σερρών|545 00|Λητή|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Τροχαία|Τμήμα Τροχαίας Χαλκηδόνος|Κατσαντώνη 10|570 07|Χαλκηδόνα|thtro
+Κεντρική Μακεδονία|Θεσσαλονίκης|Τροχαία|Υποδιεύθυνση Τροχαίας Θεσσαλονίκης|Μαργαροπούλου 26|546 29|Θεσσαλονίκη|the
+Πελοπόννησος|Αρκαδίας|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Βόρειας Κυνουρίας||220 01|Παράλιο Άστρος|ark
+Πελοπόννησος|Αρκαδίας|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Γορτυνίας||220 07|Δημητσάνα|ark
+Πελοπόννησος|Αρκαδίας|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Μεγαλόπολης|Σταθοπούλου 37|222 00|Μεγαλόπολη|ark
+Πελοπόννησος|Αρκαδίας|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Νότιας Κυνουρίας||223 00|Λεωνίδιο|ark
+Στερεά Ελλάδα|Βοιωτίας|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Αλιάρτου|Λεωφόρος Αθηνών (χωρίς αριθμό)|320 01|Αλίαρτος|voi
+Στερεά Ελλάδα|Βοιωτίας|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Θηβών|Διρκαίου|322 00|Θήβα|voi
+Στερεά Ελλάδα|Βοιωτίας|Αστυνομικό Τμήμα|Αστυνομικό Τμήμα Τανάγρας|Δεδάκη 27|320 09|Σχηματάρι|voi
+Στερεά Ελλάδα|Βοιωτίας|Αστυνομικός Σταθμός|Τοπικός Αστυνόμος Σκουρτών||320 09|Πύλη Βοιωτίας|voi
+Στερεά Ελλάδα|Βοιωτίας|Τροχαία|Τμήμα Τροχαίας Αυτοκινητοδρόμων Βοιωτίας Π.Α.Θ.Ε.|90ή χ/θ Π.Α.Θ.Ε. – Α.Κ. Θηβών|322 00|Θήβα|voi
+Στερεά Ελλάδα|Φωκίδας|Αστυνομικός Σταθμός|Αστυνομικός Σταθμός Γραβιάς||330 57|Γραβιά|fok
+Στερεά Ελλάδα|Φωκίδας|Τροχαία|Τμήμα Τροχαίας Ιτέας|Νικ. Ευθυμίου 3|332 00|Ιτέα|fok`;
 const SERVICES=SVC_RAW.split('\n').map(l=>{
   const p=l.split('|');
-  return{cat:p[0],name:p[1],addr:p[2]||'',tk:p[3]||'',city:p[4]||'',nomos:p[5]||'',url:SVC_URL[p[6]]||'',hay:fold(p[1]+' '+p[4]+' '+p[5]+' '+p[0])};
+  return{region:p[0],nomos:p[1],cat:p[2],name:p[3],addr:p[4]||'',tk:p[5]||'',city:p[6]||'',url:SVC_URL[p[7]]||'',
+    hay:fold(p[3]+' '+p[6]+' '+p[1]+' '+p[2]+' '+p[0])};
 });
 const SVC_INDEX_RAW=`Αττικής|attikis
 Θεσσαλονίκης|thessalonikis
@@ -942,18 +993,17 @@ function searchServices(query,limit){
   const tokens=qf.split(/\s+/).filter(Boolean);
   const match=hay=>tokens.every(t=>hay.includes(t));
   const rows=[];
-  SERVICES.forEach(s=>{if(match(s.hay))rows.push({kind:'official',name:s.name,addr:s.addr,tk:s.tk,city:s.city,nomos:s.nomos,url:s.url,cat:s.cat});});
+  SERVICES.forEach(s=>{if(match(s.hay))rows.push({kind:'official',...s});});
   const hist=new Set();cases.forEach(c=>{if(c.service)hist.add(c.service);if(c.dates&&c.dates.oosDest)hist.add(c.dates.oosDest);});
   [...hist].sort().forEach(n=>{if(match(fold(n))&&!SERVICES.some(s=>fold(s.name)===fold(n)))rows.push({kind:'history',name:n});});
   SVC_CITIES.forEach(ct=>{
     if(!match(fold(ct)))return;
-    ['ΤΤ '+ct,'ΑΤ '+ct].forEach(n=>{if(!rows.some(r=>fold(r.name)===fold(n)))rows.push({kind:'short',name:n,city:ct});});
+    ['ΤΤ '+ct,'ΑΤ '+ct].forEach(n=>{if(!rows.some(r=>fold(r.name)===fold(n)))rows.push({kind:'short',name:n});});
   });
   rows.sort((a,b)=>(a.kind==='official'?0:a.kind==='history'?1:2)-(b.kind==='official'?0:b.kind==='history'?1:2));
-  const links=SVC_INDEX.filter(x=>match(x.hay)).slice(0,3);
-  return{rows:rows.slice(0,limit||8),links};
+  return{rows:rows.slice(0,limit||8),links:SVC_INDEX.filter(x=>match(x.hay)).slice(0,3)};
 }
-function serviceByFold(n){const f=fold(n);return SERVICES.find(s=>fold(s.name)===f)||null;}
+const serviceByFold=n=>{const f=fold(n);return SERVICES.find(s=>fold(s.name)===f)||null;};
 
 /* ================= ΗΜΕΡΟΜΗΝΙΕΣ — ΑΜΕΙΛΙΚΤΕΣ ================= */
 function getOrthodoxEaster(year){
@@ -976,7 +1026,7 @@ function addDays(s,days,dir='forward'){if(!s)return'';let d=new Date(s+'T12:00:0
 const isDue=s=>!!s&&s<=todayStr();
 const dayDiff=(a,b)=>Math.round((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/86400000);
 
-/* ================= ΑΠΟΘΗΚΕΥΣΗ & ΜΕΤΑΦΟΡΑ ================= */
+/* ================= ΑΠΟΘΗΚΕΥΣΗ ================= */
 let locked=false;
 function save(){if(locked){alert('Η εφαρμογή είναι μόνο για ανάγνωση — απέτυχε η μεταφορά δεδομένων.');return;}try{localStorage.setItem(KEY,JSON.stringify(cases));}catch(e){toast('Αποτυχία αποθήκευσης: '+e.message,'err');}}
 const get=id=>cases.find(x=>x.id===id);
@@ -1008,9 +1058,7 @@ function migrate(o){
   c.history=c.history||[];c.flags=[];
   c.statePin=c.statePin&&ST[c.statePin.s]?c.statePin:null;
   c.moveTo=c.moveTo||'';
-  ensureDocType(c);
-  c.schema=6;
-  reconcile(c);
+  ensureDocType(c);c.schema=6;reconcile(c);
   return c;
 }
 function load(){
@@ -1025,8 +1073,10 @@ function load(){
   }
   cases=seedDemo();save();tick();
 }
+function loadViews(){try{savedViews=JSON.parse(localStorage.getItem(LSK_VIEWS)||'[]')||[];}catch(e){savedViews=[];}if(!Array.isArray(savedViews))savedViews=[];}
+const saveViews=()=>localStorage.setItem(LSK_VIEWS,JSON.stringify(savedViews));
 
-/* ================= ΦΑΣΗ — ΥΠΟΛΟΓΙΣΜΟΣ ================= */
+/* ================= ΦΑΣΗ ================= */
 const invDates=D=>[1,2,3].flatMap(n=>[D['inv'+n+'Create'],D['inv'+n+'Send'],D['inv'+n+'Proof']]).filter(Boolean);
 const polNeeded=c=>c.removalWhat!=='foreign';
 const badProof=D=>[1,2,3].some(n=>D['inv'+n+'Res']==='bad');
@@ -1091,9 +1141,11 @@ function reconcile(c){
 function tick(){let ch=false;cases.forEach(c=>{if(reconcile(c))ch=true;});if(ch)save();}
 
 /* ================= UNDO ================= */
-let undoTimer=0;
+let undoTimer=0,bulkSnap=null;
 function hideToast(){$('#undoBar').hidden=true;clearTimeout(undoTimer);}
-function showToast(c,label){const b=$('#undoBar');b.dataset.id=c.id;b.querySelector('span').textContent=label;b.hidden=false;clearTimeout(undoTimer);undoTimer=setTimeout(hideToast,9000);}
+function showToast(c,label){const b=$('#undoBar');b.dataset.id=c.id;b.querySelector('span').textContent=label;b.hidden=false;
+  b.querySelector('button').onclick=()=>{const cc=get(b.dataset.id);if(cc)undoLast(cc);};
+  clearTimeout(undoTimer);undoTimer=setTimeout(hideToast,9000);}
 function act(c,label,fn){
   const before=clone(c);
   fn();reconcile(c);
@@ -1101,7 +1153,6 @@ function act(c,label,fn){
   save();render();showToast(c,label);
 }
 function undoLast(c){const u=(c.undo||[]).pop();if(!u)return;const i=cases.indexOf(c);const restored=migrate(u.snap);restored.undo=c.undo;cases[i]=restored;save();hideToast();render();toast('Αναίρεση: '+u.l,'ok');}
-$('#undoBar').querySelector('button').onclick=()=>{const c=get($('#undoBar').dataset.id);if(c)undoLast(c);};
 function toast(msg,kind){const t=document.createElement('div');t.className='tst'+(kind?' '+kind:'');t.textContent=msg;$('#toast').appendChild(t);setTimeout(()=>t.remove(),3400);}
 
 /* ================= WIZARD ================= */
@@ -1186,7 +1237,7 @@ function secondary(c){
   return out;
 }
 
-/* ================= WORD ΠΡΟΣΚΛΗΣΗ ================= */
+/* ================= WORD ================= */
 const DOCX_MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const CRC_T=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
 const crc32=u8=>{let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=CRC_T[(c^u8[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;};
@@ -1240,8 +1291,7 @@ let LOGO_BYTES=null;
 function logoBytes(){
   if(LOGO_BYTES)return LOGO_BYTES;
   const cv=document.createElement('canvas');cv.width=218;cv.height=192;const x=cv.getContext('2d');
-  x.fillStyle='#fff';x.fillRect(0,0,218,192);
-  x.translate(109,96);
+  x.fillStyle='#fff';x.fillRect(0,0,218,192);x.translate(109,96);
   x.strokeStyle='#123A9E';x.lineWidth=7;x.beginPath();x.arc(0,0,78,0,7);x.stroke();
   x.lineWidth=2.5;x.beginPath();x.arc(0,0,66,0,7);x.stroke();
   x.fillStyle='#123A9E';x.beginPath();
@@ -1249,8 +1299,7 @@ function logoBytes(){
   x.closePath();x.fill();
   x.fillStyle='#fff';x.beginPath();x.arc(0,0,17,0,7);x.fill();
   x.fillStyle='#123A9E';x.font='bold 15px Arial';x.textAlign='center';x.textBaseline='middle';x.fillText('ΕΛ.ΑΣ.',0,1);
-  const b64=cv.toDataURL('image/png').split(',')[1];
-  LOGO_BYTES=Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0));return LOGO_BYTES;
+  LOGO_BYTES=Uint8Array.from(atob(cv.toDataURL('image/png').split(',')[1]),ch=>ch.charCodeAt(0));return LOGO_BYTES;
 }
 function buildInviteDocx(c,n,when){
   const d=String(when||todayStr()),mm=d.slice(5,7),yyyy=d.slice(0,4);
@@ -1313,13 +1362,10 @@ function buildInviteDocx(c,n,when){
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>`+
     TBL([4600,5606],[left,right])+
     P(R('ΠΡΟΣ',{b:true,u:true,sz:24,sp:40}),{jc:'center',before:300,after:160})+
-    nameBlock+addrBlock+body1+
-    TBL([6400,3806],[noteL,noteR])+
-    P(R('ΑΠΟΔΕΙΚΤΙΚΟ',{b:true,u:true,sz:28,sp:20}),{jc:'center',before:1500,after:60})+
-    recv+
+    nameBlock+addrBlock+body1+TBL([6400,3806],[noteL,noteR])+
+    P(R('ΑΠΟΔΕΙΚΤΙΚΟ',{b:true,u:true,sz:28,sp:20}),{jc:'center',before:1500,after:60})+recv+
     P(R('Για βεβαίωση συντάχθηκε το παρόν και υπογράφεται ως ακολούθως.'),{ind:'w:left="400"',before:240,after:120})+
-    TBL([3400,3400,3406],[sig('ΠΑΡΑΛΑΒΩΝ'),sig('ΜΑΡΤΥΡΑΣ'),sig('ΕΠΙΔΟΥΣ')])+
-    P(R('',{sz:2}))+
+    TBL([3400,3400,3406],[sig('ΠΑΡΑΛΑΒΩΝ'),sig('ΜΑΡΤΥΡΑΣ'),sig('ΕΠΙΔΟΥΣ')])+P(R('',{sz:2}))+
     `<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="680" w:right="850" w:bottom="560" w:left="850" w:header="400" w:footer="400" w:gutter="0"/></w:sectPr></w:body></w:document>`;
   const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman" w:eastAsia="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="el-GR" w:eastAsia="el-GR" w:bidi="ar-SA"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>`;
@@ -1346,7 +1392,7 @@ async function sendInvitation(c,n,when){
   }catch(err){console.error(err);alert('Σφάλμα δημιουργίας πρόσκλησης: '+err.message);}
 }
 
-/* ================= PARSER (MakeACopy) ================= */
+/* ================= PARSER ================= */
 const OcrParser=(()=>{
   function prepare(text){
     let cleaned=String(text||'').replace(/\[[^\]]*\]/g,' ');
@@ -1537,7 +1583,7 @@ const OcrParser=(()=>{
   return{parseDocument,toForm};
 })();
 
-/* ================= ΣΥΧΝΕΣ ΠΑΡΑΒΑΣΕΙΣ & ΑΡΘΡΑ ================= */
+/* ================= ΣΥΧΝΕΣ ΠΑΡΑΒΑΣΕΙΣ ================= */
 let ART_MAP={};
 try{ART_MAP=JSON.parse(localStorage.getItem(LSK_ART)||'null')||{};}catch(e){ART_MAP={};}
 VIOL.forEach(v=>{if(ART_MAP[v]===undefined)ART_MAP[v]=v==='Υπερβολική ταχύτητα'?'24':'';});
@@ -1545,6 +1591,7 @@ const saveArt=()=>localStorage.setItem(LSK_ART,JSON.stringify(ART_MAP));
 function renderArtMap(){
   $('#artMap').innerHTML=VIOL.map(v=>`<div class="er"><label>${esc(v)}<input data-art="${esc(v)}" value="${esc(ART_MAP[v]||'')}" placeholder="π.χ. 24" autocomplete="off"></label></div>`).join('');
   $('#catCount').innerHTML=CATS.map(c=>`<i>${esc(c)} ${CATALOG.filter(v=>v.cat===c).length}</i>`).join('')+`<i style="color:var(--cyan)">σύνολο ${CATALOG.length}</i>`;
+  $('#srcNote').textContent='Κατάλογος: '+CAT_SOURCE+' · έκδοση δεδομένων '+CAT_VERSION+'. Υπηρεσίες: επίσημη πύλη ΕΛ.ΑΣ. — '+SERVICES.length+' υπηρεσίες με στοιχεία, '+SVC_INDEX.length+' ενότητες με σύνδεσμο.';
 }
 $('#artMap').addEventListener('input',e=>{const k=e.target.dataset.art;if(!k)return;ART_MAP[k]=e.target.value.trim();saveArt();});
 
@@ -1604,17 +1651,18 @@ const stepper=c=>{const{S,i}=stepInfo(c);
   const cap=c.state==='closed'?'Ολοκληρώθηκε':'Βήμα '+(i+1)+' από '+S.length+' · '+S[i]+' · προσκλήσεις '+invDone(c)+'/3';
   return`<div class="steps"><div class="bar">${bar}</div><span>${esc(cap)}</span></div>`;};
 const plateChip=(p,cls='')=>{const s=normPlate(p);const m=/^([Α-Ω]{3})(\d{4})$/.exec(s);
-  const txt=m?m[1]+'-'+m[2]:(s||'—');
-  return`<span class="plate ${cls}"><span class="eu"><i>★</i>GR</span><span class="num">${esc(txt)}</span></span>`;};
+  return`<span class="plate ${cls}"><span class="eu"><i>★</i>GR</span><span class="num">${esc(m?m[1]+'-'+m[2]:(s||'—'))}</span></span>`;};
 const apptTag=c=>(c.state!=='appointment'&&c.state!=='closed'&&c.dates.appt&&c.dates.appt>=todayStr()&&!c.dates.susp)?'Ραντεβού '+sd(c.dates.appt):'';
 const IC_PHONE='<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
 const IC_CHEV='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>';
 function rowHTML(c,badge){
-  const s=stOf(c),pls=c.state==='closed'?[]:phoneList(c.phone);
-  const cls=hotState(c)?'o':urgent(c)?'u':'',n=invDone(c);
+  const s=stOf(c),pls=(c.state==='closed'||selMode)?[]:phoneList(c.phone);
+  const cls=[hotState(c)?'o':urgent(c)?'u':'',sel.has(c.id)?'sel':''].filter(Boolean).join(' ');
+  const n=invDone(c);
   const when=[whenText(c),apptTag(c)].filter(Boolean).join(' · '),lead=badge?'':pendingLabel(c);
   const sv=[c.service,c.notes?'ΣΗΜ: '+String(c.notes).split('\n')[0].slice(0,40):''].filter(Boolean).join(' · ');
   return`<div class="rc ${cls}" data-open="${c.id}">
+    ${selMode?`<span class="rc-box">${sel.has(c.id)?'✓':''}</span>`:''}
     <div class="rc-m">
       <div class="rc-t">${plateChip(c.plate,'sm')}<span class="nm">${esc(c.name)}</span>${n?`<em>${n}/3</em>`:''}</div>
       ${badge||lead?`<div class="rc-s">${badge?`<span class="bd t-${s.t}">${esc(s.l)}</span>`:''}${esc(lead)}</div>`:''}
@@ -1624,7 +1672,7 @@ function rowHTML(c,badge){
       <div class="rc-p"><i style="width:${stepPct(c)}%"></i></div>
     </div>
     ${pls.length?`<a class="rc-call" href="${esc(telHref(pls[0]))}" aria-label="Κλήση ${esc(pls[0])}">${IC_PHONE}</a>`:''}
-    <span class="rc-chev">${IC_CHEV}</span></div>`;
+    ${selMode?'':`<span class="rc-chev">${IC_CHEV}</span>`}</div>`;
 }
 const safeRow=(c,b)=>{try{return rowHTML(c,b);}catch(e){console.error(e);return`<div class="rc o" data-open="${c.id}"><div class="rc-m"><div class="rc-t">${plateChip(c.plate,'sm')}<span class="nm">${esc(c.name)}</span></div><div class="rc-s">Σφάλμα εμφάνισης</div></div></div>`;}};
 const prio=c=>{const s=c.state;
@@ -1668,6 +1716,18 @@ function sortCases(list){
   else arr.sort((a,b)=>(a.state==='closed')-(b.state==='closed')||prio(a)-prio(b)||(dueOf(a)||'9999').localeCompare(dueOf(b)||'9999'));
   return arr;
 }
+function filteredCases(){
+  const ql=fold(q).trim();
+  const hay=c=>fold([c.name,c.plate,c.folder,c.phone,c.service,c.protocol,c.address,c.vArticle,c.violationType,fmt(c.receivedDate),...Object.values(c.dates||{}).filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(v)).map(fmt)].join(' '));
+  return cases.filter(c=>(stateF==='all'||c.state===stateF)&&(folderF==='all'||(c.folder||'(χωρίς φάκελο)')===folderF)&&(invF==='all'||(c.state!=='closed'&&invDone(c)===Number(invF)))&&(!ql||hay(c).includes(ql)));
+}
+function renderViews(){
+  $('#viewsRow').innerHTML=savedViews.map((v,i)=>`<span class="vchip${i===activeView?' on':''}" draggable="true" data-vi="${i}">
+    <button class="mv" data-vmv="${i}|-1" aria-label="Πάνω">◀</button>
+    <button class="lbl" data-vapply="${i}">${esc(v.name)}</button>
+    <button class="mv" data-vmv="${i}|1" aria-label="Κάτω">▶</button>
+    <button class="del" data-vdel="${i}" aria-label="Διαγραφή">×</button></span>`).join('');
+}
 function renderCases(){
   const sc={},fm={},ic={0:0,1:0,2:0,3:0};
   cases.forEach(c=>{sc[c.state]=(sc[c.state]||0)+1;const f=c.folder||'(χωρίς φάκελο)';fm[f]=(fm[f]||0)+1;if(c.state!=='closed')ic[invDone(c)]++;});
@@ -1676,11 +1736,19 @@ function renderCases(){
   $('#fsInv').textContent=invF==='all'?'Όλες':invF==='0'?'Καμία':invF;
   $('#fsSort').textContent={prio:'Προτερ.',due:'Προθεσμία',recv:'Παραλαβή',plate:'Πινακίδα'}[sortF];
   $('#btnClearF').hidden=stateF==='all'&&folderF==='all'&&invF==='all'&&!q;
-  const ql=fold(q).trim();
-  const hay=c=>fold([c.name,c.plate,c.folder,c.phone,c.service,c.protocol,c.address,c.vArticle,fmt(c.receivedDate),...Object.values(c.dates||{}).filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(v)).map(fmt)].join(' '));
-  const list=sortCases(cases.filter(c=>(stateF==='all'||c.state===stateF)&&(folderF==='all'||(c.folder||'(χωρίς φάκελο)')===folderF)&&(invF==='all'||(c.state!=='closed'&&invDone(c)===Number(invF)))&&(!ql||hay(c).includes(ql))));
+  $('#btnSelMode').textContent=selMode?'✕ Έξοδος επιλογής':'☑ Επιλογή πολλών';
+  renderViews();
+  const list=sortCases(filteredCases());
   $('#casesList').innerHTML=list.map(c=>safeRow(c,true)).join('')||'<div class="empty">Δεν βρέθηκαν υποθέσεις.</div>';
   renderCases.opts={sc,fm,ic};
+  renderBulk();
+}
+function renderBulk(){
+  document.body.classList.toggle('selmode',selMode&&view==='cases');
+  const bar=$('#bulkBar');
+  bar.hidden=!(selMode&&view==='cases');
+  $('#bulkN').textContent=sel.size+' επιλεγμένες';
+  $('#bulkMove').disabled=!sel.size;
 }
 function renderMenu(){
   const last=localStorage.getItem(LSK_BAK);
@@ -1733,8 +1801,11 @@ function detailHTML(c){
   if(c.state==='appointment')sec+=`<a class="btn ghost" target="_blank" rel="noopener" href="${esc(calLink(c))}">Προσθήκη στο Google Calendar</a>`;
   secondary(c).forEach((x,i)=>{sec+=`<button class="btn ghost" data-b="${c.id}|${i}">${esc(x[0])}</button>`;});
   const apptBtn=!FINAL_STATES.includes(c.state)?`<button class="btn appt" data-r="${c.id}">${liveAppt(c)?'Αλλαγή ραντεβού · '+sd(lastAppt(c).d):'Κλείσιμο ραντεβού'}</button>`:'';
+  const svcLine=svcHit
+    ?`${esc(svcHit.name)}<br><span style="font-size:12px;color:var(--dim)">${esc([svcHit.addr||'Δεν αναγράφεται οδός στην επίσημη πηγή',svcHit.tk,svcHit.city].filter(Boolean).join(' · '))}</span>`
+    :esc(c.service);
   const det=[
-    c.service&&`<span><b>Υπηρεσία παράβασης:</b> ${esc(svcHit?svcHit.name:c.service)}${svcHit&&(svcHit.addr||svcHit.tk)?`<br><span style="font-size:12px;color:var(--dim)">${esc([svcHit.addr,svcHit.tk,svcHit.city].filter(Boolean).join(', '))}</span>`:''}</span>`,
+    c.service&&`<span><b>Υπηρεσία παράβασης:</b> ${svcLine}</span>`,
     c.folder&&`<span><b>Φάκελος:</b> ${esc(c.folder)}</span>`,
     c.docType&&`<span><b>Τι αφορά:</b> ${esc(c.docType)}</span>`,
     c.fine&&`<span><b>Πρόστιμο:</b> ${esc(c.fine)} €</span>`,
@@ -1777,7 +1848,7 @@ function render(){
   const urgentN=cases.filter(c=>{const g=groupOf(c);return g==='pol'||g==='late';}).length;
   const nb=$('#nbToday');nb.hidden=!urgentN;nb.textContent=urgentN;
   if(view==='today')renderToday();else if(view==='cases')renderCases();else if(view==='menu')renderMenu();else renderCase();
-  checkBackup();renderDemo();
+  checkBackup();renderDemo();renderBulk();
 }
 function setView(v,id){
   if(v==='case'){if(view!=='case')prevView=view;openId=id;history.pushState({v:'case'},'');}
@@ -1804,11 +1875,16 @@ function folderOpts(cur){
   $('#fFolder').innerHTML=h+'<option value="custom">+ Νέος φάκελος…</option>';
   if(!cur)$('#fFolder').value='';else{$('#fFolder').value=cur;if($('#fFolder').value!==cur)$('#fFolder').value='';}
 }
+function allFolders(){
+  const std=[];for(const[g,subs]of Object.entries(FOLDERS))subs.forEach(s=>std.push(subs.length===1?g:g+' - '+s));
+  const extra=[...new Set(cases.map(c=>c.folder).filter(f=>f&&!std.includes(f)))].sort();
+  return std.concat(extra);
+}
 const toggles=()=>{
   $('#fFolderCustomWrap').hidden=$('#fFolder').value!=='custom';
   const custom=$('#fViol').value==='custom';
   $('#fViolCustomWrap').hidden=!custom;
-  if(custom)renderViolSug();else{$('#violSug').hidden=true;}
+  if(custom)renderViolSug();else $('#violSug').hidden=true;
 };
 function checkPlate(val){
   const v=normPlate(val),w=$('#plateWarning'),id=String(F.dataset.id||'');
@@ -1826,41 +1902,48 @@ E.plate.addEventListener('input',e=>{
   checkPlate(el.value);
 });
 
-/* ---- Προτάσεις παράβασης (μόνο στο ελεύθερο κείμενο) ---- */
+/* ---- Προτάσεις παράβασης ---- */
 let violCat='';
 function renderViolChips(){
-  $('#violChips').innerHTML=['',...CATS].map(c=>`<button type="button" data-vcat="${esc(c)}" class="${violCat===c?'on':''}">${c?esc(c):'Όλα'}</button>`).join('');
+  $('#violChips').innerHTML=['',...CATS].map(c=>{
+    const n=c?CATALOG.filter(v=>v.cat===c).length:CATALOG.length;
+    return`<button type="button" data-vcat="${esc(c)}" class="${violCat===c?'on':''}">${c?esc(c):'Όλα'}<i>${n}</i></button>`;}).join('');
 }
 function violRow(v){
   const fine=/^\d+$/.test(String(v.fine))?v.fine+' €':v.fine;
-  return`<button type="button" class="sug-i" data-vid="${v.id}">
-    <span class="t"><b>${esc(v.name)}</b><span class="art">${esc(v.article)}</span></span>
-    <span class="m"><i class="cat">${esc(v.cat)}</i><i class="fine">${esc(fine)}</i>${v.suspend&&v.suspend!=='-'?`<i class="susp">${esc(v.suspend)}</i>`:''}</span>
-  </button>`;
+  const badges=[`<i class="cat">${esc(v.cat)}</i>`,`<i class="fine">${esc(fine)}</i>`];
+  if(v.crim)badges.push('<i class="crim">ΠΛΗΜΜΕΛΗΜΑ</i>');
+  if(v.sigma)badges.push('<i class="sigma">κατηγορία Σ</i>');
+  if(v.pts)badges.push(`<i class="pts">ΣΕΣΟ ${v.pts}</i>`);
+  if(v.half)badges.push('<i class="half">½ πρόστιμο</i>');
+  return`<div class="sug-i" style="display:flex;gap:8px;align-items:flex-start">
+    <button type="button" data-vid="${v.id}" style="flex:1;min-width:0;background:none;border:0;text-align:left;color:inherit;padding:0">
+      <span class="t"><b>${esc(v.name)}</b><span class="art">${esc(v.article)}</span></span>
+      <span class="m">${badges.join('')}</span>
+      <span class="dt" hidden data-dt="${v.id}">${esc(v.details)}${v.suspend&&v.suspend!=='-'?`<br><b>Νόμος:</b> ${esc(v.suspend)}`:''}</span>
+    </button>
+    <button type="button" class="info" data-vinfo="${v.id}" aria-label="Στοιχεία νόμου">i</button>
+  </div>`;
 }
 function renderViolSug(){
   const box=$('#violSug'),list=$('#violSugL'),qy=$('#fViolOther').value;
   renderViolChips();
-  const res=searchCatalog(qy,violCat,violCat&&!normText(qy)?60:8);
+  const res=searchCatalog(qy,violCat,(violCat&&!normText(qy))?60:8);
   box.hidden=false;
-  $('#violSugN').textContent=res.length?res.length+'':'';
-  if(!res.length){
-    list.innerHTML=`<div class="sug-e">${normText(qy)||violCat?'Καμία αντιστοίχιση στον κατάλογο. Γράψε ελεύθερα — το άρθρο το βάζεις μόνος σου.':'Γράψε λέξη-κλειδί ή άρθρο (π.χ. «κράνος», «ΑμεΑ», «38§2», «ΛΕΑ») ή διάλεξε κατηγορία.'}</div>`;
-    return;
-  }
-  list.innerHTML=res.map(violRow).join('');
+  $('#violSugN').textContent=res.length?res.length:'';
+  list.innerHTML=res.length?res.map(violRow).join('')
+    :`<div class="sug-e">${normText(qy)||violCat?'Καμία αντιστοίχιση στον κατάλογο.<br>Γράψε ελεύθερα — το άρθρο το βάζεις μόνος σου.':'Γράψε λέξη-κλειδί ή άρθρο (π.χ. «κράνος», «ΑμεΑ», «38§2», «ΛΕΑ», «βυτιοφόρο») ή διάλεξε κατηγορία.'}</div>`;
 }
-$('#violChips').addEventListener('click',e=>{
-  const b=e.target.closest('[data-vcat]');if(!b)return;
-  violCat=b.dataset.vcat;renderViolSug();
-});
+$('#violChips').addEventListener('click',e=>{const b=e.target.closest('[data-vcat]');if(!b)return;violCat=b.dataset.vcat;renderViolSug();});
 $('#violSugL').addEventListener('click',e=>{
+  const info=e.target.closest('[data-vinfo]');
+  if(info){const dt=$('#violSugL').querySelector(`[data-dt="${info.dataset.vinfo}"]`);if(dt)dt.hidden=!dt.hidden;info.textContent=dt&&!dt.hidden?'×':'i';return;}
   const b=e.target.closest('[data-vid]');if(!b)return;
   const v=CATALOG.find(x=>x.id===+b.dataset.vid);if(!v)return;
   $('#fViolOther').value=v.name;
   E.vArticle.value=v.article;
   const p=$('#violPicked');
-  p.innerHTML=`✓ Άρθρο <code>${esc(v.article)}</code> από κατάλογο · ${esc(CAT_SOURCE)}`;
+  p.innerHTML=`<span>✓</span><span>Άρθρο <code>${esc(v.article)}</code> από τον κατάλογο (${esc(CAT_SOURCE)}).<br>Οι ημέρες και το «Προς αφαίρεση» <b>δεν άλλαξαν</b> — τα ορίζει η υπηρεσία ανάθεσης.</span>`;
   p.hidden=false;
   $('#violSug').hidden=true;
   toast('Συμπληρώθηκε μόνο το άρθρο '+v.article,'ok');
@@ -1870,13 +1953,13 @@ $('#fViolOther').addEventListener('input',()=>{$('#violPicked').hidden=true;rend
 $('#fViolOther').addEventListener('focus',()=>{if($('#fViol').value==='custom')renderViolSug();});
 
 /* ---- Προτάσεις υπηρεσίας ---- */
-function svcRow(r,i,scope){
+function svcRow(r,scope){
   if(r.kind==='official'){
-    const sub=[r.addr,r.tk,r.city].filter(Boolean).join(' · ');
+    const sub=[r.addr||'Δεν αναγράφεται οδός στην επίσημη πηγή',r.tk,r.city].filter(Boolean).join(' · ');
     return`<button type="button" class="sug-i" data-svc="${esc(r.name)}" data-scope="${scope}">
       <span class="t"><b>${esc(r.name)}</b><span class="art" style="color:var(--cyan);background:var(--infobg)">${esc(r.nomos)}</span></span>
-      ${sub?`<span class="ad">${esc(sub)}</span>`:''}
-      <span class="m"><i class="cat">${esc(r.cat)}</i><i>επίσημο ΕΛ.ΑΣ.</i></span>
+      <span class="ad">${esc(sub)}</span>
+      <span class="m"><i class="cat">${esc(r.cat)}</i><i>${esc(r.region)}</i><i>επίσημο ΕΛ.ΑΣ.</i></span>
     </button>`;
   }
   return`<button type="button" class="sug-i" data-svc="${esc(r.name)}" data-scope="${scope}">
@@ -1887,11 +1970,10 @@ function svcRow(r,i,scope){
 function renderSvcSug(scope){
   const input=scope==='oos'?$('#fOosDest'):$('#fService');
   const box=$(scope==='oos'?'#oosSug':'#svcSug'),list=$(scope==='oos'?'#oosSugL':'#svcSugL'),n=$(scope==='oos'?'#oosSugN':'#svcSugN');
-  const {rows,links}=searchServices(input.value,8);
   if(!normText(input.value)){box.hidden=true;return;}
+  const {rows,links}=searchServices(input.value,8);
   box.hidden=false;n.textContent=rows.length?rows.length:'';
-  let h=rows.map((r,i)=>svcRow(r,i,scope)).join('');
-  if(!rows.length)h='<div class="sug-e">Καμία υπηρεσία στον κατάλογο. Γράψε ελεύθερα την ονομασία.</div>';
+  let h=rows.length?rows.map(r=>svcRow(r,scope)).join(''):'<div class="sug-e">Καμία υπηρεσία στον κατάλογο. Γράψε ελεύθερα την ονομασία.</div>';
   h+=links.map(l=>`<a class="sug-link" href="${esc(l.url)}" target="_blank" rel="noopener">↗ Επίσημες υπηρεσίες Νομού ${esc(l.nomos)}</a>`).join('');
   list.innerHTML=h;
 }
@@ -1901,7 +1983,7 @@ function applySvc(name,scope){
   $(scope==='oos'?'#oosSug':'#svcSug').hidden=true;
   if(scope!=='oos'){
     const hit=serviceByFold(name),info=$('#svcInfo');
-    if(hit&&(hit.addr||hit.tk||hit.city)){info.textContent=[hit.addr,hit.tk,hit.city].filter(Boolean).join(' · ');info.hidden=false;}
+    if(hit){info.innerHTML=`${esc([hit.addr||'Δεν αναγράφεται οδός στην επίσημη πηγή',hit.tk,hit.city].filter(Boolean).join(' · '))} · <a href="${esc(hit.url)}" target="_blank" rel="noopener">επίσημη πηγή</a>`;info.hidden=false;}
     else info.hidden=true;
   }
 }
@@ -1956,7 +2038,7 @@ function openForm(id,adv){
   const c=id?get(id):null;
   F.reset();F.dataset.id=id||'';
   const sm=$('#scanMsg');sm.hidden=true;sm.textContent='';
-  $('#violSug').hidden=true;$('#svcSug').hidden=true;$('#oosSug').hidden=true;$('#violPicked').hidden=true;$('#svcInfo').hidden=true;
+  ['#violSug','#svcSug','#oosSug','#violPicked','#svcInfo'].forEach(s=>$(s).hidden=true);
   violCat='';
   $('#formTitle').textContent=c?'Επεξεργασία υπόθεσης':'Νέα υπόθεση';
   $('#pasteBlock').hidden=!!c;
@@ -1982,7 +2064,7 @@ function openForm(id,adv){
     if(c.folder&&$('#fFolder').value===''){$('#fFolder').value='custom';E.folderCustom.value=c.folder;}
     checkPlate(c.plate);
     const hit=serviceByFold(c.service);
-    if(hit&&(hit.addr||hit.tk)){$('#svcInfo').textContent=[hit.addr,hit.tk,hit.city].filter(Boolean).join(' · ');$('#svcInfo').hidden=false;}
+    if(hit){$('#svcInfo').innerHTML=`${esc([hit.addr||'Δεν αναγράφεται οδός στην επίσημη πηγή',hit.tk,hit.city].filter(Boolean).join(' · '))} · <a href="${esc(hit.url)}" target="_blank" rel="noopener">επίσημη πηγή</a>`;$('#svcInfo').hidden=false;}
   }else{
     E.receivedDate.value=todayStr();E.docType.value='Κλήση';E.removalWhat.value='license';
     fillProto(yy2(todayStr()),'');E.protocolNum.value='';E.address.value='';
@@ -2009,11 +2091,10 @@ F.addEventListener('submit',e=>{
   if(D.oos&&!String(D.oosDest||'').trim()){alert('Συμπλήρωσε την υπηρεσία προορισμού για το «Εκτός αρμοδιότητας».');return;}
   D.closedKind=D.closed?(D.closedKind||'transmittal'):'';
   if(D.susp&&days)D.return=addDays(D.susp,days);
-  let plate=normPlate(E.plate.value),proto=buildProtocol();
-  const recv=E.receivedDate.value;
+  const plate=normPlate(E.plate.value),proto=buildProtocol();
   const rec={
     id,plate,name:E.name.value.trim().toUpperCase(),service:normText(E.service.value),
-    phone:E.phone.value.trim(),receivedDate:recv,folder,
+    phone:E.phone.value.trim(),receivedDate:E.receivedDate.value,folder,
     violationType:E.violationType.value==='custom'?E.violationOther.value.trim().toUpperCase():E.violationType.value,
     docType:E.docType.value||'Κλήση',fine:E.fine.value.trim(),
     requiresLicense:days>0,removalDays:days,removalWhat:what,
@@ -2052,7 +2133,7 @@ $('#btnFormDelete').onclick=()=>{
   cases=cases.filter(x=>x.id!==id);save();render();dlgF.close();
   const b=$('#undoBar');b.dataset.id='';b.querySelector('span').textContent='Διαγραφή '+c.plate;b.hidden=false;
   clearTimeout(undoTimer);undoTimer=setTimeout(hideToast,9000);
-  b.querySelector('button').onclick=()=>{cases.unshift(migrate(snap));save();render();hideToast();toast('Επαναφορά υπόθεσης','ok');b.querySelector('button').onclick=()=>{const cc=get(b.dataset.id);if(cc)undoLast(cc);};};
+  b.querySelector('button').onclick=()=>{cases.unshift(migrate(snap));save();render();hideToast();toast('Επαναφορά υπόθεσης','ok');};
 };
 
 /* ================= PASTE ================= */
@@ -2097,24 +2178,88 @@ $('#btnPaste').onclick=()=>wiz('Συμπλήρωση από έγγραφο','Ε�
  [{t:'Συμπλήρωση',c:'pri',v:()=>{const ok=$('#wTx').value.trim().length>30;if(!ok)alert('Επικόλλησε πρώτα το κείμενο του εγγράφου.');return ok;},f:()=>applyScanFromPaste($('#wTx').value)}]);
 $('#btnGenInv').onclick=()=>wiz('Δημιουργία πρόσκλησης','Από τα στοιχεία της φόρμας. Ποια πρόσκληση;','',[1,2,3].map(n=>({t:n+'η πρόσκληση',c:n===1?'pri':'',f:()=>sendInvitation({plate:normPlate(E.plate.value),name:E.name.value.trim().toUpperCase(),protocol:buildProtocol(),address:E.address.value.trim(),service:normText(E.service.value),vDate:E.vDate.value,vPlace:E.vPlace.value.trim(),vArticle:E.vArticle.value.trim()},n,todayStr())})));
 
+/* ================= ΠΡΟΒΟΛΕΣ & ΜΑΖΙΚΕΣ ================= */
+$('#btnSaveView').onclick=()=>{
+  const name=prompt('Όνομα προβολής:','Η προβολή μου');
+  if(!name||!name.trim())return;
+  savedViews.push({name:name.trim().slice(0,28),stateF,folderF,invF,sortF,q});
+  activeView=savedViews.length-1;saveViews();renderCases();toast('Η προβολή αποθηκεύτηκε','ok');
+};
+$('#viewsRow').addEventListener('click',e=>{
+  const ap=e.target.closest('[data-vapply]');
+  if(ap){const v=savedViews[+ap.dataset.vapply];if(!v)return;
+    stateF=v.stateF;folderF=v.folderF;invF=v.invF;sortF=v.sortF;q=v.q||'';$('#searchInput').value=q;
+    activeView=+ap.dataset.vapply;render();toast('Προβολή: '+v.name,'ok');return;}
+  const del=e.target.closest('[data-vdel]');
+  if(del){const i=+del.dataset.vdel;const nm=savedViews[i].name;savedViews.splice(i,1);activeView=-1;saveViews();renderCases();toast('Διαγράφηκε: '+nm,'ok');return;}
+  const mv=e.target.closest('[data-vmv]');
+  if(mv){const[i,d]=mv.dataset.vmv.split('|').map(Number);const j=i+d;
+    if(j<0||j>=savedViews.length)return;
+    const t=savedViews[i];savedViews[i]=savedViews[j];savedViews[j]=t;
+    if(activeView===i)activeView=j;else if(activeView===j)activeView=i;
+    saveViews();renderCases();}
+});
+let dragI=null;
+$('#viewsRow').addEventListener('dragstart',e=>{const c=e.target.closest('[data-vi]');if(!c)return;dragI=+c.dataset.vi;c.classList.add('drag');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',String(dragI));}catch(x){}});
+$('#viewsRow').addEventListener('dragover',e=>{const c=e.target.closest('[data-vi]');if(!c||dragI===null)return;e.preventDefault();
+  $('#viewsRow').querySelectorAll('.vchip').forEach(x=>x.classList.remove('over'));c.classList.add('over');});
+$('#viewsRow').addEventListener('drop',e=>{const c=e.target.closest('[data-vi]');if(!c||dragI===null)return;e.preventDefault();
+  const j=+c.dataset.vi;if(j!==dragI){const t=savedViews[dragI];savedViews.splice(dragI,1);savedViews.splice(j,0,t);activeView=j;saveViews();}
+  dragI=null;renderCases();});
+$('#viewsRow').addEventListener('dragend',()=>{dragI=null;$('#viewsRow').querySelectorAll('.vchip').forEach(x=>x.classList.remove('drag','over'));});
+
+$('#btnSelMode').onclick=()=>{selMode=!selMode;sel.clear();render();};
+$('#bulkDone').onclick=()=>{selMode=false;sel.clear();render();};
+$('#bulkAll').onclick=()=>{
+  const list=filteredCases();
+  if(sel.size===list.length){sel.clear();}else{list.forEach(c=>sel.add(c.id));}
+  renderCases();
+};
+$('#bulkMove').onclick=()=>{
+  if(!sel.size)return;
+  const opts=allFolders();
+  openPick('Μετακίνηση '+sel.size+' υποθέσεων σε φάκελο',opts.map(f=>({v:f,l:f})),'',dest=>{
+    if(!dest)return;
+    if(!confirm('Μετακίνηση '+sel.size+' υποθέσεων στον φάκελο «'+dest+'»;\n\nΜπορείς να αναιρέσεις αμέσως μετά.'))return;
+    bulkSnap=clone(cases);
+    let n=0;
+    cases.forEach(c=>{if(sel.has(c.id)){c.folder=dest;c.moveTo='';n++;}});
+    save();sel.clear();selMode=false;render();
+    const b=$('#undoBar');b.dataset.id='';b.querySelector('span').textContent='Μετακίνηση '+n+' υποθέσεων';b.hidden=false;
+    clearTimeout(undoTimer);undoTimer=setTimeout(()=>{hideToast();bulkSnap=null;},9000);
+    b.querySelector('button').onclick=()=>{if(bulkSnap){cases=bulkSnap.map(migrate);bulkSnap=null;save();hideToast();render();toast('Αναιρέθηκε η μαζική μετακίνηση','ok');}};
+    toast(n+' υποθέσεις μετακινήθηκαν','ok');
+  });
+};
+
 /* ================= EVENTS ================= */
 document.addEventListener('click',e=>{
+  if(e.target.closest('dialog')||e.target.closest('.bulkbar'))return;
+  if(selMode&&view==='cases'){
+    const row=e.target.closest('[data-open]');
+    if(row){const id=row.dataset.open;if(sel.has(id))sel.delete(id);else sel.add(id);renderCases();return;}
+  }
   const t=e.target.closest('[data-nav],[data-open],[data-a],[data-b],[data-r],[data-e],[data-p],[data-mv],[data-u],[data-grp],[data-filter],[data-mvall]');
-  if(!t||e.target.closest('.rc-call')||e.target.closest('dialog'))return;
+  if(!t||e.target.closest('.rc-call'))return;
   const d=t.dataset;
   if(d.nav){openId=null;view=d.nav;render();scrollTo(0,0);return;}
   if(d.grp){if(d.grp==='wait')waitOpen=!waitOpen;else callOpen=!callOpen;render();return;}
   if(d.filter){
     renderCases();const{sc,fm,ic}=renderCases.opts;
-    if(d.filter==='state')openPick('Φάση',[{v:'all',l:'Όλες',n:cases.length}].concat(Object.keys(ST).filter(k=>sc[k]).map(k=>({v:k,l:ST[k].l,n:sc[k]}))),stateF,v=>{stateF=v;render();});
-    else if(d.filter==='folder')openPick('Φάκελος',[{v:'all',l:'Όλοι',n:cases.length}].concat(Object.keys(fm).sort().map(f=>({v:f,l:f,n:fm[f]}))),folderF,v=>{folderF=v;render();});
-    else if(d.filter==='inv')openPick('Αριθμός προσκλήσεων',[{v:'all',l:'Όλες'},{v:'0',l:'Καμία',n:ic[0]},{v:'1',l:'1 πρόσκληση',n:ic[1]},{v:'2',l:'2 προσκλήσεις',n:ic[2]},{v:'3',l:'3 προσκλήσεις',n:ic[3]}],invF,v=>{invF=v;render();});
-    else openPick('Ταξινόμηση',[{v:'prio',l:'Προτεραιότητα'},{v:'due',l:'Προθεσμία'},{v:'recv',l:'Ημ. παραλαβής'},{v:'plate',l:'Πινακίδα'}],sortF,v=>{sortF=v;render();});
+    if(d.filter==='state')openPick('Φάση',[{v:'all',l:'Όλες',n:cases.length}].concat(Object.keys(ST).filter(k=>sc[k]).map(k=>({v:k,l:ST[k].l,n:sc[k]}))),stateF,v=>{stateF=v;activeView=-1;render();});
+    else if(d.filter==='folder')openPick('Φάκελος',[{v:'all',l:'Όλοι',n:cases.length}].concat(Object.keys(fm).sort().map(f=>({v:f,l:f,n:fm[f]}))),folderF,v=>{folderF=v;activeView=-1;render();});
+    else if(d.filter==='inv')openPick('Αριθμός προσκλήσεων',[{v:'all',l:'Όλες'},{v:'0',l:'Καμία',n:ic[0]},{v:'1',l:'1 πρόσκληση',n:ic[1]},{v:'2',l:'2 προσκλήσεις',n:ic[2]},{v:'3',l:'3 προσκλήσεις',n:ic[3]}],invF,v=>{invF=v;activeView=-1;render();});
+    else openPick('Ταξινόμηση',[{v:'prio',l:'Προτεραιότητα'},{v:'due',l:'Προθεσμία'},{v:'recv',l:'Ημ. παραλαβής'},{v:'plate',l:'Πινακίδα'}],sortF,v=>{sortF=v;activeView=-1;render();});
     return;}
   if(d.open){setView('case',d.open);return;}
-  if(d.p){q=d.p;$('#searchInput').value=q;stateF='all';folderF='all';invF='all';view='cases';render();scrollTo(0,0);return;}
+  if(d.p){q=d.p;$('#searchInput').value=q;stateF='all';folderF='all';invF='all';activeView=-1;view='cases';render();scrollTo(0,0);return;}
   if(d.mvall){const list=cases.filter(x=>x.moveTo===d.mvall);
-    if(list.length&&confirm('Μετακινήθηκαν '+list.length+' φάκελοι στο «'+d.mvall+'»;')){list.forEach(x=>{x.folder=x.moveTo;x.moveTo='';});save();render();}return;}
+    if(list.length&&confirm('Μετακινήθηκαν '+list.length+' φάκελοι στο «'+d.mvall+'»;')){
+      bulkSnap=clone(cases);list.forEach(x=>{x.folder=x.moveTo;x.moveTo='';});save();render();
+      const b=$('#undoBar');b.dataset.id='';b.querySelector('span').textContent='Μετακίνηση '+list.length+' φακέλων';b.hidden=false;
+      clearTimeout(undoTimer);undoTimer=setTimeout(()=>{hideToast();bulkSnap=null;},9000);
+      b.querySelector('button').onclick=()=>{if(bulkSnap){cases=bulkSnap.map(migrate);bulkSnap=null;save();hideToast();render();toast('Αναιρέθηκε','ok');}};}
+    return;}
   const id=d.a||d.r||d.e||d.mv||d.u||(d.b||'').split('|')[0];
   const c=get(id);if(!c)return;
   if(d.a){const a=actFor(c);if(a)a[1](c);}
@@ -2126,22 +2271,24 @@ document.addEventListener('click',e=>{
 });
 $('#btnBack').onclick=()=>history.back();
 window.addEventListener('popstate',()=>{if(view==='case'){view=prevView;openId=null;render();}});
-$('#searchInput').oninput=e=>{q=e.target.value;if(view!=='cases'){view='cases';}render();};
-$('#btnClearF').onclick=()=>{stateF='all';folderF='all';invF='all';q='';$('#searchInput').value='';render();};
+$('#searchInput').oninput=e=>{q=e.target.value;activeView=-1;if(view!=='cases')view='cases';render();};
+$('#btnClearF').onclick=()=>{stateF='all';folderF='all';invF='all';q='';activeView=-1;$('#searchInput').value='';render();};
 $('#btnNew').onclick=()=>openForm(null);
 $('#btnBwClose').onclick=()=>{$('#backupWarning').hidden=true;};
 $('#btnDemoClear').onclick=()=>{
-  const n=cases.filter(c=>c.demo).length;
-  if(!n)return;
+  const n=cases.filter(c=>c.demo).length;if(!n)return;
   if(!confirm('Διαγραφή '+n+' υποθέσεων επίδειξης; Οι πραγματικές υποθέσεις δεν επηρεάζονται.'))return;
-  cases=cases.filter(c=>!c.demo);save();render();toast('Τα δείγματα διαγράφηκαν','ok');
+  bulkSnap=clone(cases);cases=cases.filter(c=>!c.demo);save();render();
+  const b=$('#undoBar');b.dataset.id='';b.querySelector('span').textContent='Διαγραφή '+n+' δειγμάτων';b.hidden=false;
+  clearTimeout(undoTimer);undoTimer=setTimeout(()=>{hideToast();bulkSnap=null;},9000);
+  b.querySelector('button').onclick=()=>{if(bulkSnap){cases=bulkSnap.map(migrate);bulkSnap=null;save();hideToast();render();toast('Αναιρέθηκε','ok');}};
+  toast('Τα δείγματα διαγράφηκαν','ok');
 };
 $('#btnExport').onclick=()=>{
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(cases,null,2)],{type:'application/json'}));
   a.download='ypotheseis_'+todayStr()+'.json';a.click();
-  localStorage.setItem(LSK_BAK,Date.now());checkBackup();
-  toast('Backup κατέβηκε','ok');
+  localStorage.setItem(LSK_BAK,Date.now());checkBackup();toast('Backup κατέβηκε','ok');
 };
 $('#btnImport').onclick=()=>$('#importFile').click();
 $('#importFile').onchange=e=>{
@@ -2160,8 +2307,7 @@ $('#importFile').onchange=e=>{
       arr=arr.filter(x=>x&&typeof x==='object');
       if(!arr.length)throw new Error('Το αρχείο δεν περιέχει υποθέσεις.');
       const hasDemo=cases.some(c=>c.demo);
-      const msg='Βρέθηκαν '+arr.length+' υποθέσεις. Η επαναφορά αντικαθιστά τις τρέχουσες.'+(hasDemo?' Τα δείγματα θα αφαιρεθούν.':'')+'\n\nΣυνέχεια;';
-      if(!confirm(msg)){input.value='';return;}
+      if(!confirm('Βρέθηκαν '+arr.length+' υποθέσεις. Η επαναφορά αντικαθιστά τις τρέχουσες.'+(hasDemo?' Τα δείγματα θα αφαιρεθούν.':'')+'\n\nΣυνέχεια;')){input.value='';return;}
       if(prev)localStorage.setItem('troxonomika_v2_before_restore',prev);
       cases=arr.map(migrate);
       if(hasDemo)cases=cases.filter(c=>!c.demo||arr.some(x=>x.id===c.id&&x.demo));
@@ -2179,8 +2325,8 @@ $('#importFile').onchange=e=>{
 };
 $('#btnPrint').onclick=()=>{
   let h=`<h1>ΚΑΤΑΣΤΑΣΗ ΥΠΟΘΕΣΕΩΝ</h1><div style="font-size:9px;margin-bottom:6px">Ημερομηνία: ${fmt(todayStr())} | Σύνολο: ${cases.length}</div>`+
-    '<table><thead><tr><th>Α/Α</th><th>Πινακίδα</th><th>Ονοματεπώνυμο</th><th>Τηλέφωνο</th><th>Κατάσταση</th><th>Ραντεβού</th><th>Απόδοση</th><th>Προσκλ.</th><th>Φάκελος</th></tr></thead><tbody>';
-  cases.forEach((c,i)=>{h+=`<tr><td>${i+1}</td><td><b>${esc(c.plate)}</b></td><td>${esc(c.name)}</td><td>${esc(c.phone||'—')}</td><td>${(ST[c.state]||{}).l||'—'}</td><td>${fmt(c.dates.appt)}</td><td>${fmt(c.dates.return)}</td><td>${invDone(c)}/3</td><td>${esc(c.folder||'—')}</td></tr>`;});
+    '<table><thead><tr><th>Α/Α</th><th>Πινακίδα</th><th>Ονοματεπώνυμο</th><th>Τηλέφωνο</th><th>Άρθρο</th><th>Κατάσταση</th><th>Ραντεβού</th><th>Απόδοση</th><th>Προσκλ.</th><th>Φάκελος</th></tr></thead><tbody>';
+  sortCases(cases).forEach((c,i)=>{h+=`<tr><td>${i+1}</td><td><b>${esc(c.plate)}</b></td><td>${esc(c.name)}</td><td>${esc(c.phone||'—')}</td><td>${esc(c.vArticle||'—')}</td><td>${(ST[c.state]||{}).l||'—'}</td><td>${fmt(c.dates.appt)}</td><td>${fmt(c.dates.return)}</td><td>${invDone(c)}/3</td><td>${esc(c.folder||'—')}</td></tr>`;});
   $('#printArea').innerHTML=h+'</tbody></table>';print();
 };
 
@@ -2191,9 +2337,9 @@ function seedDemo(){
   return[
     mk({plate:'ΙΚΑ2846',name:'ΠΑΠΑΔΟΠΟΥΛΟΣ ΓΕΩΡΓΙΟΣ',service:'ΤΤ ΘΕΡΜΗΣ',phone:'6971234567',receivedDate:plus(t,-2),docType:'Κλήση',violationType:'Υπερβολική ταχύτητα',vArticle:'24§9αγ',removalDays:30,removalWhat:'license',folder:'Τηλέφωνα - Χωρίς ραντεβού',address:'Φιλαδελφείας 22',protocol:'2515/11-'+yy2(t)+'/451',vDate:plus(t,-9),vPlace:'39+370 χ/θ της Π.Ε.Ο. Λάρισας - Βόλου'}),
     mk({plate:'ΜΝΗ7315',name:'ΙΩΑΝΝΟΥ ΜΑΡΙΑ',service:'ΤΤ ΛΗΤΗΣ',phone:'6945551234',receivedDate:plus(t,-6),docType:'Κλήση',violationType:'ΜΗ ΧΡΗΣΗ ΚΡΑΝΟΥΣ (ΟΔΗΓΟΣ)',vArticle:'16§6',removalDays:30,removalWhat:'license',folder:'Τηλέφωνα - Με ραντεβού',calls:[{d:plus(t,-4),r:'booked'}],appts:[{b:plus(t,-4),d:t,s:'call',res:''}],dates:{phone:plus(t,-4),callRes:'booked',appt:t}}),
-    mk({plate:'ΑΒΖ9042',name:'ΝΙΚΟΛΑΟΥ ΔΗΜΗΤΡΙΟΣ',service:'Τμήμα Τροχαίας Βέροιας',phone:'6932224466',receivedDate:plus(t,-45),docType:'Κλήση',removalDays:30,removalWhat:'license',folder:'Εκκρεμότητες - Καταχώρηση POL',dates:{susp:plus(t,-3),phone:plus(t,-40),callRes:'booked'},calls:[{d:plus(t,-40),r:'booked'}],appts:[{b:plus(t,-40),d:plus(t,-3),s:'call',res:''}]}),
+    mk({plate:'ΑΒΖ9042',name:'ΝΙΚΟΛΑΟΥ ΔΗΜΗΤΡΙΟΣ',service:'Τμήμα Τροχαίας Βέροιας',phone:'6932224466',receivedDate:plus(t,-45),docType:'Κλήση',violationType:'ΣΕ ΧΩΡΟ ΑΜΕΑ (Ρ-71)',vArticle:'38§2ιζ',removalDays:60,removalWhat:'both',folder:'Εκκρεμότητες - Καταχώρηση POL',dates:{susp:plus(t,-3),phone:plus(t,-40),callRes:'booked'},calls:[{d:plus(t,-40),r:'booked'}],appts:[{b:plus(t,-40),d:plus(t,-3),s:'call',res:''}]}),
     mk({plate:'ΕΚΤ1568',name:'ΒΑΣΙΛΕΙΟΥ ΕΛΕΝΗ',service:'ΑΤ ΧΑΛΚΗΔΟΝΑΣ',phone:'6988887777',receivedDate:plus(t,-60),docType:'Κλήση',removalDays:30,removalWhat:'license',folder:'Εκκρεμότητες - Καταχώρηση POL',dates:{susp:plus(t,-40),polRem:plus(t,-39),return:plus(t,-10),phone:plus(t,-55),callRes:'booked'},calls:[{d:plus(t,-55),r:'booked'}]}),
-    mk({plate:'ΡΥΧ6273',name:'ΑΘΑΝΑΣΙΟΥ ΧΡΗΣΤΟΣ',service:'ΤΤ ΛΑΡΙΣΑΣ',phone:'',receivedDate:plus(t,-12),docType:'Κλήση',removalDays:60,removalWhat:'both',folder:'Προσκλήσεις - 1η πρόσκληση',dates:{searchNone:plus(t,-10),inv1Create:plus(t,-8),inv1Send:plus(t,-8),inv1Proof:plus(t,-3),inv1Res:'ok'}}),
+    mk({plate:'ΡΥΧ6273',name:'ΑΘΑΝΑΣΙΟΥ ΧΡΗΣΤΟΣ',service:'ΤΤ ΛΑΡΙΣΑΣ',phone:'',receivedDate:plus(t,-12),docType:'Κλήση',violationType:'ΚΙΝΗΣΗ ΣΤΗ ΛΕΑ',vArticle:'33§9',removalDays:40,removalWhat:'license',folder:'Προσκλήσεις - 1η πρόσκληση',dates:{searchNone:plus(t,-10),inv1Create:plus(t,-8),inv1Send:plus(t,-8),inv1Proof:plus(t,-3),inv1Res:'ok'}}),
     mk({plate:'ΟΖΗ3951',name:'ΓΕΩΡΓΙΟΥ ΑΙΚΑΤΕΡΙΝΗ',service:'ΤΤ ΚΑΛΑΜΑΡΙΑΣ',phone:'6909090909',receivedDate:plus(t,-30),docType:'Απόφαση',removalDays:0,removalWhat:'license',folder:'Αναμονή αποδεικτικού',dates:{phone:plus(t,-28),callRes:'noanswer',inv1Create:plus(t,-26),inv1Send:plus(t,-26),inv1Proof:plus(t,-20),inv1Res:'ok',inv2Create:plus(t,-14),inv2Send:plus(t,-14)},calls:[{d:plus(t,-28),r:'noanswer'}]}),
     mk({plate:'ΤΑΜ8406',name:'ΣΤΑΥΡΟΥ ΝΙΚΟΛΑΟΣ',service:'ΤΤ ΘΕΣΣΑΛΟΝΙΚΗΣ',phone:'6977776666',receivedDate:plus(t,-90),docType:'Κλήση',removalDays:30,removalWhat:'license',folder:'',dates:{susp:plus(t,-70),polRem:plus(t,-69),return:plus(t,-40),returned:plus(t,-40),polRet:plus(t,-39),phone:plus(t,-85),callRes:'booked'},calls:[{d:plus(t,-85),r:'booked'}]})
   ];
@@ -2201,26 +2347,26 @@ function seedDemo(){
 
 /* ================= ΑΥΤΟΕΛΕΓΧΟΣ (σιωπηλός) ================= */
 function runDiagnostics(){
-  const R=[];const ok=(name,cond,detail)=>R.push({name,pass:!!cond,detail:detail||''});
-  const eq=(name,a,b)=>ok(name,a===b,'αναμενόταν '+JSON.stringify(b)+', βρέθηκε '+JSON.stringify(a));
+  const R=[];const ok=(n,c,d)=>R.push({name:n,pass:!!c,detail:d||''});
+  const eq=(n,a,b)=>ok(n,a===b,'αναμενόταν '+JSON.stringify(b)+', βρέθηκε '+JSON.stringify(a));
   eq('Πάσχα 2024',iso(getOrthodoxEaster(2024)),'2024-05-05');
   eq('Πάσχα 2025',iso(getOrthodoxEaster(2025)),'2025-04-20');
   eq('Πάσχα 2026',iso(getOrthodoxEaster(2026)),'2026-04-12');
-  ok('Καθαρά Δευτέρα 2026 αργία',isHoliday('2026-02-23'));
-  ok('Μ. Παρασκευή 2026 αργία',isHoliday('2026-04-10'));
-  ok('Αγ. Πνεύματος 2026 αργία',isHoliday('2026-06-01'));
-  ok('28ης Οκτωβρίου αργία',isHoliday('2026-10-28'));
+  ok('Καθαρά Δευτέρα 2026',isHoliday('2026-02-23'));
+  ok('Μ. Παρασκευή 2026',isHoliday('2026-04-10'));
+  ok('Αγ. Πνεύματος 2026',isHoliday('2026-06-01'));
+  ok('28ης Οκτωβρίου',isHoliday('2026-10-28'));
   ok('Κυριακή αργία',isNonWorking('2026-11-29'));
   ok('Σάββατο αργία',isNonWorking('2026-11-28'));
   ok('Καθημερινή εργάσιμη',!isNonWorking('2026-11-27'));
   eq('Παρασκευή +1 → Δευτέρα',addDays('2026-11-27',1),'2026-11-30');
   eq('10ήμερο από Δευτέρα',addDays('2026-11-16',10),'2026-11-26');
-  eq('Παραμονή Χριστουγέννων +1 → 28/12',addDays('2026-12-24',1),'2026-12-28');
+  eq('Παραμονή Χριστουγέννων +1',addDays('2026-12-24',1),'2026-12-28');
   eq('Λήξη αφαίρεσης 30 ημ.',addDays('2026-11-02',30),'2026-12-02');
   const base=o=>migrate({id:uid(),plate:'ΑΒΕ1234',name:'ΔΟΚΙΜΗ',receivedDate:'2026-11-01',docType:'Κλήση',removalDays:0,...o});
   eq('Φάση: χωρίς τηλέφωνο',base({}).state,'search');
   eq('Φάση: με τηλέφωνο',base({phone:'6971234567'}).state,'to_call');
-  eq('Φάση: ενημερώθηκε πρόσφατα',base({phone:'6971234567',dates:{phone:todayStr(),callRes:'informed'}}).state,'informed');
+  eq('Φάση: ενημερώθηκε',base({phone:'6971234567',dates:{phone:todayStr(),callRes:'informed'}}).state,'informed');
   eq('Φάση: δεν απάντησε',base({phone:'6971234567',dates:{phone:plus(todayStr(),-3),callRes:'noanswer'}}).state,'inv1_create');
   eq('Φάση: ραντεβού σήμερα',base({phone:'6971234567',appts:[{b:todayStr(),d:todayStr(),s:'call',res:''}],dates:{appt:todayStr()}}).state,'appointment');
   eq('Φάση: POL αφαίρεσης',base({removalDays:30,dates:{susp:plus(todayStr(),-2)}}).state,'pol_rem');
@@ -2230,52 +2376,61 @@ function runDiagnostics(){
   eq('Φάση: διαβίβαση',base({removalDays:10,dates:{susp:plus(todayStr(),-20),polRem:plus(todayStr(),-19),returned:todayStr(),polRet:todayStr()}}).state,'transmittal');
   eq('Φάση: ολοκληρωμένη',base({dates:{closed:todayStr()}}).state,'closed');
   eq('Φάση: 1ο 10ήμερο',base({dates:{inv1Create:plus(todayStr(),-5),inv1Send:plus(todayStr(),-5),inv1Proof:plus(todayStr(),-2),inv1Res:'ok'}}).state,'inv1_wait');
-  eq('Φάση: μετά το 1ο 10ήμερο → 2η',base({dates:{inv1Create:'2026-10-01',inv1Send:'2026-10-01',inv1Proof:'2026-10-05',inv1Res:'ok'}}).state,'inv2_create');
-  eq('Φάση: 3ο 10ήμερο (κλήση) → διαβίβαση',base({dates:{inv1Create:'2026-08-01',inv1Send:'2026-08-01',inv1Proof:'2026-08-03',inv1Res:'ok',inv2Create:'2026-08-14',inv2Send:'2026-08-14',inv2Proof:'2026-08-17',inv2Res:'ok',inv3Create:'2026-08-28',inv3Send:'2026-08-28',inv3Proof:'2026-09-01',inv3Res:'ok'}}).state,'transmittal');
-  eq('Φάση: 3ο 10ήμερο (απόφαση) → μήνυση',base({docType:'Απόφαση',dates:{inv1Create:'2026-08-01',inv1Send:'2026-08-01',inv1Proof:'2026-08-03',inv1Res:'ok',inv2Create:'2026-08-14',inv2Send:'2026-08-14',inv2Proof:'2026-08-17',inv2Res:'ok',inv3Create:'2026-08-28',inv3Send:'2026-08-28',inv3Proof:'2026-09-01',inv3Res:'ok'}}).state,'complaint');
-  eq('Φάση: αρνητικό αποδεικτικό → διαβίβαση',base({dates:{inv1Create:'2026-11-01',inv1Send:'2026-11-01',inv1Proof:'2026-11-02',inv1Res:'bad'}}).state,'transmittal');
+  eq('Φάση: μετά το 1ο → 2η',base({dates:{inv1Create:'2026-10-01',inv1Send:'2026-10-01',inv1Proof:'2026-10-05',inv1Res:'ok'}}).state,'inv2_create');
+  const full={inv1Create:'2026-08-01',inv1Send:'2026-08-01',inv1Proof:'2026-08-03',inv1Res:'ok',inv2Create:'2026-08-14',inv2Send:'2026-08-14',inv2Proof:'2026-08-17',inv2Res:'ok',inv3Create:'2026-08-28',inv3Send:'2026-08-28',inv3Proof:'2026-09-01',inv3Res:'ok'};
+  eq('Φάση: 3ο 10ήμερο κλήση → διαβίβαση',base({dates:{...full}}).state,'transmittal');
+  eq('Φάση: 3ο 10ήμερο απόφαση → μήνυση',base({docType:'Απόφαση',dates:{...full}}).state,'complaint');
+  eq('Φάση: αρνητικό αποδεικτικό',base({dates:{inv1Create:'2026-11-01',inv1Send:'2026-11-01',inv1Proof:'2026-11-02',inv1Res:'bad'}}).state,'transmittal');
   eq('Φάση: ξένο δίπλωμα χωρίς POL',base({removalDays:30,removalWhat:'foreign',dates:{susp:plus(todayStr(),-2)}}).state,'suspended');
   eq('Πινακίδα: λατινικά→ελληνικά',normPlate('abe-1234'),'ΑΒΕ1234');
   eq('Πινακίδα: O→Ο',normPlate('abo-1234'),'ΑΒΟ1234');
   ok('Πινακίδα: έγκυρη μορφή',/^[ΑΒΕΖΗΙΚΜΝΟΡΤΥΧ]{3}[0-9]{4}$/.test(normPlate('ΙΚΑ2846')));
-  ok('Πινακίδα: απαγορευμένα γράμματα απορρίπτονται',!/^[ΑΒΕΖΗΙΚΜΝΟΡΤΥΧ]{3}[0-9]{4}$/.test(normPlate('ΓΔΘ1234')));
+  ok('Πινακίδα: απαγορευμένα γράμματα',!/^[ΑΒΕΖΗΙΚΜΝΟΡΤΥΧ]{3}[0-9]{4}$/.test(normPlate('ΓΔΘ1234')));
   eq('Πρωτόκολλο: 3 ψηφία',autoPrefix('451','26'),'2515/11-26/');
   eq('Πρωτόκολλο: 2 ψηφία',autoPrefix('45','26'),'2517/4-26/');
   const FIXTURE='ΕΛΛΗΝΙΚΗ ΔΗΜΟΚΡΑΤΙΑ ΑΡΧΗΓΕΙΟ ΕΛΛΗΝΙΚΗΣ ΑΣΤΥΝΟΜΙΑΣ ΤΜΗΜΑ ΤΡΟΧΑΙΑΣ ΒΟΛΟΥ ΠΡΟΣ ΑΣΤΥΝΟΜΙΚΟ ΤΜΗΜΑ ΚΑΛΑΜΑΡΙΑΣ Αριθμ.Πρωτ.:2515/5Α/26/3591α Σας διαβιβάζουμε την υπ\' αριθ. 625300252250 από 28/09/2026 πράξη βεβαίωσης παράβασης, σε τρία (3) αντίτυπα, καθότι ο οδηγός του υπ\' αριθ. ΒΟΟ-5701 Ι.Χ.Ε. αυτοκινήτου με στοιχεία ιδιοκτήτη ΕΥΦΡΑΙΜΙΑΔΗΣ Ευάγγελος του Νικολάου, κάτοικος Καλαμαριάς, οδός Φιλαδελφείας 22, περιφέρεια δικαιοδοσίας σας, στις 28/09/2026 και ώρα 14:00 στην 39+370 χ/θ της Π.Ε.Ο. Λάρισας - Βόλου διαπιστώθηκε με ειδική ηλεκτρονική τεχνική φωτογραφική συσκευή, να κινείται με ταχύτητα 88 χ/ω αντί του ανώτατου επιτρεπόμενου ορίου των 50 χ/ω, κατά παράβαση του άρθρου 24ς9αγ του Ν.5209/13-06-2025. προβείτε ΑΜΕΣΑ στην αφαίρεση της άδειας ικανότητας οδήγησης αυτού, για χρονικό διάστημα τριάντα (30) ημερών. δεν είναι υποχρεωτικό για την απόδοση της Α.Ι.Ο. Σε περίπτωση άρνησης προσέλευσης, μετά από νόμιμη πρόσκληση, παρακαλούμε για την εφαρμογή των διατάξεων 169 Π.Κ. (απείθεια).';
   const pr=OcrParser.parseDocument(FIXTURE),pf=OcrParser.toForm(pr);
   eq('Parser: πινακίδα',pf.plate,'ΒΟΟ5701');
   eq('Parser: ημέρες ολογράφως',pf.removalDays,30);
-  eq('Parser: υπηρεσία πλήρης',pf.service,'Τμήμα Τροχαίας Βόλου');
-  eq('Parser: ημερομηνία παράβασης',pf.vDate,'2026-09-28');
+  eq('Parser: υπηρεσία',pf.service,'Τμήμα Τροχαίας Βόλου');
+  eq('Parser: ημερομηνία',pf.vDate,'2026-09-28');
   eq('Parser: άρθρο',pf.vArticle,'24§9αγ');
   eq('Parser: τόπος',pf.vPlace,'39+370 χ/θ της Π.Ε.Ο. Λάρισας - Βόλου');
   eq('Parser: ονοματεπώνυμο',pf.name,'ΕΥΦΡΑΙΜΙΑΔΗΣ ΕΥΑΓΓΕΛΟΣ');
   eq('Parser: είδος',pf.violationType,'Υπερβολική ταχύτητα');
   eq('Parser: διεύθυνση',pf.address,'Φιλαδελφείας 22');
   eq('Parser: 169 → μήνυση',pf.endRoute,'complaint');
-  ok('Parser: σημείωση χωρίς πληρωμή',(pf.notes||[]).includes('ΑΠΟΔΟΣΗ ΧΩΡΙΣ ΠΛΗΡΩΜΗ'));
-  ok('Τόπος: δεν μπερδεύει ΑΜΕΣΑ με Α.Μ.',OcrParser.parseDocument('ΤΜΗΜΑ ΚΑΛΑΜΑΡΙΑΣ προβείτε ΑΜΕΣΑ στην αφαίρεση 39+370 χ/θ').fields.place===null);
+  ok('Parser: χωρίς πληρωμή',(pf.notes||[]).includes('ΑΠΟΔΟΣΗ ΧΩΡΙΣ ΠΛΗΡΩΜΗ'));
+  ok('Τόπος: όχι ΑΜΕΣΑ→Α.Μ.',OcrParser.parseDocument('ΤΜΗΜΑ ΚΑΛΑΜΑΡΙΑΣ προβείτε ΑΜΕΣΑ στην αφαίρεση 39+370 χ/θ').fields.place===null);
   ok('Οδός: μορφολογία',((OcrParser.parseDocument('κάτοικος Καλαμαριάς, οδός Φιλαδελφείας 22, περιφέρεια').fields.address)||{}).street==='Φιλαδελφείας');
-  ok('Κατάλογος: μέγεθος',CATALOG.length>200,CATALOG.length+' εγγραφές');
-  eq('Κατάλογος: κράνος → 16§6',(searchCatalog('κρανος οδηγος','',1)[0]||{}).article,'16§6');
-  eq('Κατάλογος: ΑμεΑ → 38§2ιστ',(searchCatalog('ραμπα αμεα','',1)[0]||{}).article,'38§2ιστ');
-  ok('Κατάλογος: αναζήτηση άρθρου 249αγ',searchCatalog('249αγ','',1).length===1);
+  eq('Κατάλογος: πλήθος',CATALOG.length,237);
+  eq('Κατάλογος: κράνος οδηγός → 16§6',(searchCatalog('κρανος οδηγος','',1)[0]||{}).article,'16§6');
+  eq('Κατάλογος: ράμπα ΑμεΑ → 38§2ιστ',(searchCatalog('ραμπα αμεα','',1)[0]||{}).article,'38§2ιστ');
+  eq('Κατάλογος: ΛΕΑ → 33§9',(searchCatalog('λεα','',1)[0]||{}).article,'33§9');
+  eq('Κατάλογος: βυτιοφόρο καύσιμα',(searchCatalog('βυτιοφορο καυσιμων χωρις συνοδευτικα','',1)[0]||{}).article,'ν.3446/2006 §1.40');
+  ok('Κατάλογος: άρθρο χωρίς §',searchCatalog('249αγ','',1).length===1);
   ok('Κατάλογος: φίλτρο κατηγορίας',searchCatalog('','δίκυκλα',60).every(v=>v.cat==='δίκυκλα'));
-  ok('Συχνές: μόνο 5 στο dropdown',document.querySelectorAll('#fViol option').length===VIOL.length+2);
-  ok('Υπηρεσίες: 39 επαληθευμένες',SERVICES.length===39,SERVICES.length+'');
-  ok('Υπηρεσίες: ευρετήριο 52',SVC_INDEX.length===52,SVC_INDEX.length+'');
-  ok('Υπηρεσίες: ΘΕΡ → Θέρμης',searchServices('ΘΕΡ',8).rows.some(r=>r.name==='Τμήμα Τροχαίας Θέρμης'));
-  ok('Υπηρεσίες: Πατρών → επίσημο',searchServices('πατρων',8).rows.some(r=>r.name==='Τμήμα Τροχαίας Πατρών'));
-  eq('Word: υπηρεσία από κατάλογο',docService('ΤΜΗΜΑ ΤΡΟΧΑΙΑΣ ΘΕΡΜΗΣ'),'Τμήμα Τροχαίας Θέρμης');
-  const dx=buildInviteDocx({plate:'ΒΟΟ5701',name:'ΕΥΦΡΑΙΜΙΑΔΗΣ ΕΥΑΓΓΕΛΟΣ',protocol:'2515/11-26/451',address:'Φιλαδελφείας 22',service:'ΤΤ ΒΟΛΟΥ',vDate:'2026-09-28',vPlace:'39+370 χ/θ',vArticle:'24§9αγ'},1,'2026-11-27');
-  ok('Word: υπογραφή ZIP',dx[0]===0x50&&dx[1]===0x4b&&dx[2]===3&&dx[3]===4);
-  ok('Word: μέγεθος > 4KB',dx.length>4000,dx.length+' bytes');
-  eq('Word: CRC32',crc32(u8s('123456789')),0xCBF43926);
+  ok('Κατάλογος: ποινικά σημειωμένα',CATALOG.filter(v=>v.crim).length>=15);
+  ok('Κατάλογος: Σ σημειωμένα',CATALOG.filter(v=>v.sigma).length>=8);
+  ok('Κατάλογος: 12 κατηγορίες',CATS.every(c=>CATALOG.some(v=>v.cat===c)));
+  ok('Dropdown: μόνο συχνές + Άλλο',document.querySelectorAll('#fViol option').length===VIOL.length+2);
+  eq('Υπηρεσίες: πλήθος',SERVICES.length,39);
+  eq('Υπηρεσίες: ενότητες',SVC_INDEX.length,52);
+  ok('Υπηρεσίες: ΘΕΡ → ΤΤ Θέρμης',searchServices('ΘΕΡ',8).rows.some(r=>r.name==='Τμήμα Τροχαίας Θέρμης'));
+  ok('Υπηρεσίες: Πατρών',searchServices('πατρων',8).rows.some(r=>r.name==='Τμήμα Τροχαίας Πατρών'));
+  ok('Υπηρεσίες: Βέροια με διεύθυνση',(serviceByFold('ΤΜΗΜΑ ΤΡΟΧΑΙΑΣ ΒΕΡΟΙΑΣ')||{}).addr==='Σ. Πέτρουλα 1');
+  ok('Υπηρεσίες: χωρίς οδό δηλώνεται',serviceByFold('ΑΣΤΥΝΟΜΙΚΟΣ ΣΤΑΘΜΟΣ ΣΟΧΟΥ').addr==='');
+  eq('Word: κατάλογος → τονισμένα',docService('ΤΜΗΜΑ ΤΡΟΧΑΙΑΣ ΘΕΡΜΗΣ'),'Τμήμα Τροχαίας Θέρμης');
   eq('Word: ΤΤ ΘΕΡΜΗΣ',docService('ΤΤ ΘΕΡΜΗΣ'),'Τμήμα Τροχαίας Θέρμης');
   eq('Word: Τ.Τ. ΘΕΡΜΗΣ',docService('Τ.Τ. ΘΕΡΜΗΣ'),'Τμήμα Τροχαίας Θέρμης');
+  const dx=buildInviteDocx({plate:'ΒΟΟ5701',name:'ΕΥΦΡΑΙΜΙΑΔΗΣ ΕΥΑΓΓΕΛΟΣ',protocol:'2515/11-26/451',address:'Φιλαδελφείας 22',service:'ΤΤ ΒΟΛΟΥ',vDate:'2026-09-28',vPlace:'39+370 χ/θ',vArticle:'24§9αγ'},1,'2026-11-27');
+  ok('Word: ZIP',dx[0]===0x50&&dx[1]===0x4b&&dx[2]===3&&dx[3]===4);
+  ok('Word: μέγεθος',dx.length>4000,dx.length+' bytes');
+  eq('Word: CRC32',crc32(u8s('123456789')),0xCBF43926);
   const rt=JSON.parse(JSON.stringify(cases)).map(migrate);
-  eq('Import round-trip: πλήθος',rt.length,cases.length);
-  ok('Import round-trip: ημέρες διατηρούνται',rt.every((c,i)=>c.removalDays===cases[i].removalDays));
+  eq('Round-trip: πλήθος',rt.length,cases.length);
+  ok('Round-trip: ημέρες διατηρούνται',rt.every((c,i)=>c.removalDays===cases[i].removalDays));
+  ok('Round-trip: «Προς αφαίρεση» διατηρείται',rt.every((c,i)=>c.removalWhat===cases[i].removalWhat));
   const passed=R.filter(r=>r.pass).length;
   $('#diagSum').textContent=passed+'/'+R.length+' επιτυχημένα'+(passed===R.length?' ✓':' — ΠΡΟΒΛΗΜΑ');
   $('#diagOut').innerHTML=R.map(r=>`<div class="${r.pass?'ok':'fail'}">${r.pass?'✓':'✕'} ${esc(r.name)}${r.detail?' — '+esc(r.detail):''}</div>`).join('');
@@ -2284,12 +2439,12 @@ function runDiagnostics(){
 
 /* ================= INIT ================= */
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-load();render();
-try{const all=runDiagnostics();console.log('Αυτοέλεγχος:',all?'OK':'FAIL');}catch(e){console.error('Σφάλμα αυτοελέγχου',e);}
+loadViews();load();render();
+try{console.log('Αυτοέλεγχος:',runDiagnostics()?'OK':'FAIL');}catch(e){console.error('Σφάλμα αυτοελέγχου',e);}
 let lastDay=todayStr();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){lastDay=todayStr();tick();render();}});
 setInterval(()=>{if(todayStr()!==lastDay){lastDay=todayStr();tick();render();}},60000);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#violSug').hidden=true;$('#svcSug').hidden=true;$('#oosSug').hidden=true;}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){['#violSug','#svcSug','#oosSug'].forEach(s=>$(s).hidden=true);}});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();
 </script>
