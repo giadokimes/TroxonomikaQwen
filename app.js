@@ -1,0 +1,1370 @@
+/* Τροχονομικά — λογική εφαρμογής. Δεδομένα: data.js (παράβαση) + services.js (υπηρεσίες). */
+(() => {
+'use strict';
+const APP_REL='27.0';
+const KEY='troxonomika_v2_cases',LSK_BAK='troxonomika_v2_lastbackup',LSK_VIEWS='troxonomika_v2_views';
+const OLD_KEYS=['troxonomika_final_v29','troxonomika_final_v28','troxonomika_final_v27','troxonomika_final_v26','troxonomika_final_v25'];
+
+/* ---------- utils ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const todayStr=()=>iso(new Date());
+const fmt=v=>v?new Date(v+'T12:00:00').toLocaleDateString('el-GR'):'—';
+const sd=v=>{if(!v)return'—';const[y,m,d]=v.split('-');return d+'/'+m+(y!==String(new Date().getFullYear())?'/'+y:'');};
+const telHref=x=>'tel:'+x.replace(/[^\d+]/g,'');
+const phoneList=p=>String(p||'').split(/[\/,;\n]+/).map(x=>x.trim()).filter(x=>x.replace(/\D/g,'').length>=7);
+const plus=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return iso(d);};
+const LAT={A:'Α',B:'Β',E:'Ε',Z:'Ζ',H:'Η',I:'Ι',K:'Κ',M:'Μ',N:'Ν',O:'Ο',P:'Ρ',T:'Τ',Y:'Υ',X:'Χ'};
+const toGreek=s=>String(s??'').toUpperCase().replace(/[A-Z]/g,ch=>LAT[ch]||ch);
+const normPlate=s=>toGreek(s).replace(/[\s\-–.]/g,'');
+const fold=s=>toGreek(String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+const normText=s=>fold(s).replace(/\s+/g,' ').trim();
+const yy2=d=>String(d||todayStr()).slice(2,4);
+const PROTO_PREFIXES=yr=>['2515/11-'+yr+'/','2517/4-'+yr+'/'];
+const splitProtocol=p=>{p=String(p||'').trim().toUpperCase();const m=/^(2515\/11-\d{2}\/|2517\/4-\d{2}\/)(.*)$/.exec(p);return m?{prefix:m[1],num:m[2]}:{prefix:'',num:p};};
+const autoPrefix=(n,yr)=>{const s=String(n||'').replace(/\D/g,'');return s.length===3?'2515/11-'+yr+'/':s.length===2?'2517/4-'+yr+'/':'';};
+const lastBy=a=>(a||[]).slice().sort((x,y)=>(x.d||'').localeCompare(y.d||'')).pop();
+const cap1=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const baseArticle=a=>{const m=/^(\d{1,3})(?=[§\s(,.\-]|$)/.exec(String(a||'').trim());return m&&+m[1]>0&&+m[1]<=150?m[1]:'';};
+const dayDiff=(a,b)=>Math.round((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/86400000);
+const ageOf=d=>d?dayDiff(todayStr(),d):0;
+
+/* ---------- adapter δεδομένων ---------- */
+const G=n=>{try{return window[n];}catch(e){return undefined;}};
+const pick=(o,keys,d='')=>{for(const k of keys){if(o&&o[k]!=null&&o[k]!=='')return o[k];}return d;};
+function findArray(names){
+  for(const n of names){const v=G(n);
+    if(Array.isArray(v)&&v.length)return v;
+    if(v&&typeof v==='object')for(const k of ['items','data','violations','services','list','rows','entries'])if(Array.isArray(v[k])&&v[k].length)return v[k];}
+  return null;
+}
+const RAW_V=findArray(['data','VIOLATIONS','violations','TROXO_VIOLATIONS','TROXO_DATA','CATALOG','violationData']);
+const RAW_S=findArray(['services','SERVICES','TROXO_SERVICES','serviceCatalog','SERVICE_CATALOG','servicesData','SERVICES_DATA']);
+let RAW_I=findArray(['serviceIndex','SERVICE_INDEX','SVC_INDEX','servicesIndex','NOMOS_INDEX','serviceLinks','nomosIndex']);
+if(!RAW_I){const s=G('services')||G('SERVICES')||G('TROXO_SERVICES');if(s&&typeof s==='object')for(const k of ['index','links','nomos'])if(Array.isArray(s[k])&&s[k].length){RAW_I=s[k];break;}}
+const NOMOS_FALLBACK='Αττικής|attikis,Θεσσαλονίκης|thessalonikis,Αιτωλοακαρνανίας|aitoloakarnanias,Αργολίδας|argolidas,Αρκαδίας|arkadias,Άρτας|artas,Αχαΐας|achaias,Βοιωτίας|voiotias,Γρεβενών|grevenon,Δράμας|dramas,Δωδεκανήσου|dodekanisou,Έβρου (Αλεξανδρούπολη)|evrou-alexandroupoli,Έβρου (Ορεστιάδα)|evrou-orestiada,Ευβοίας|evvoias,Ευρυτανίας|evrytanias,Ζακύνθου|zakynthou,Ηλείας|ileias,Ημαθίας|imathias,Ηρακλείου|irakleiou,Θεσπρωτίας|thesprotias,Ιωαννίνων|ioanninon,Καβάλας|kavalas,Καρδίτσας|karditsas,Καστοριάς|kastorias,Κέρκυρας|kerkyras,Κεφαλληνίας|kefallinias,Κιλκίς|kilkis,Κοζάνης|kozanis,Κορινθίας|korinthias,Κυκλάδων|kykladon,Λακωνίας|lakonias,Λάρισας|larisas,Λασιθίου|lasithiou,Λέσβου|lesvou,Λευκάδας|lefkadas,Μαγνησίας|magnisias,Μεσσηνίας|messinias,Ξάνθης|xanthis,Πέλλας|pellas,Πιερίας|pierias,Πρέβεζας|prevezas,Ρεθύμνου|rethymnou,Ροδόπης|rodopis,Σάμου|samou,Σερρών|serron,Τρικάλων|trikalon,Φθιώτιδας|fthiotidas,Φλώρινας|florinas,Φωκίδας|fokidas,Χαλκιδικής|chalkidikis,Χανίων|chanion,Χίου|chiou';
+const stemW=w=>w.length>=5?w.replace(/(ΟΥΣ|ΟΥ|ΩΝ|ΗΣ|ΕΣ|ΑΣ|ΟΣ|ΟΝ|ΩΣ|Σ|Η|Α|Ο|Ω|Ε|Υ|Ι)$/,''):w;
+const CATALOG=(()=>{
+  const out=[],seen=new Set();
+  (RAW_V||[]).forEach((r,i)=>{
+    const name=String(pick(r,['name','title','perigrafi','Περιγραφή'],'')).trim();
+    const article=String(pick(r,['article','arthro','Άρθρο'],'')).trim();
+    if(!name||!article)return;
+    const k=fold(article)+'::'+fold(name);if(seen.has(k))return;seen.add(k);
+    const cat=String(pick(r,['category','cat','Κατηγορία'],'λοιπά')).trim();
+    const info=String(pick(r,['fullDescription','full','description','details','info'],'')).trim();
+    const det=String(pick(r,['details','info'],'')).trim();
+    const v={id:Number(pick(r,['id'],i+1)),cat,name,article,base:baseArticle(article),
+      fine:String(pick(r,['fine','prostimo','Πρόστιμο'],'')),suspend:String(pick(r,['suspend','afairesi'],'')),
+      det,info:info||det,pts:Number(pick(r,['points','seso'],0))||0,
+      crim:!!pick(r,['criminal','poiniko'],false),half:!!pick(r,['half','miso'],false),
+      sev:Number(pick(r,['severity'],0))||0};
+    v.hay=fold(name+' '+cat+' '+det+' '+v.info);
+    v.artKey=fold(article).replace(/[§\s.,()\-]/g,'');
+    v.nameKey=fold(name);
+    v.stems=[...new Set(fold(name+' '+v.info+' '+cat).split(/[^Α-Ω]+/).filter(w=>w.length>=4).map(stemW))];
+    out.push(v);
+  });
+  return out.sort((a,b)=>a.id-b.id);
+})();
+const NO_ADDR=/δεν\s+αναγραφεται/i;
+const SERVICES=(RAW_S||[]).map(r=>{
+  const name=String(pick(r,['name','officialName','service','Επίσημη ονομασία υπηρεσίας','Επίσημη ονομασία'],'')).trim();
+  let addr=String(pick(r,['addr','address','street','Οδός / Διεύθυνση','Οδός'],'')).trim();
+  if(NO_ADDR.test(addr))addr='';
+  const s={name,addr,tk:String(pick(r,['tk','postal','zip','Τ.Κ.'],'')).trim(),
+    city:String(pick(r,['city','Πόλη / Περιοχή','Πόλη'],'')).trim(),
+    nomos:String(pick(r,['nomos','prefecture','Νομός'],'')).trim(),
+    region:String(pick(r,['region','Περιφέρεια'],'')).trim(),
+    cat:String(pick(r,['cat','category','Κατηγορία'],'')).trim(),
+    url:String(pick(r,['url','source','Επίσημη πηγή'],'')).trim()};
+  s.hay=fold(name+' '+s.city+' '+s.nomos+' '+s.cat+' '+s.region);
+  return s;
+}).filter(s=>s.name);
+const SVC_INDEX=(RAW_I&&RAW_I.length?RAW_I.map(r=>({
+  nomos:String(pick(r,['nomos','name','Νομός / Ενότητα','Νομός'],'')).trim(),
+  url:String(pick(r,['url','link','Επίσημη σελίδα υπηρεσιών ΕΛ.ΑΣ.'],'')).trim()}))
+  :NOMOS_FALLBACK.split(',').map(x=>{const p=x.split('|');return{nomos:p[0],url:'https://www.astynomia.gr/anazitisi-ypiresion/nomos-'+p[1]+'/'};}))
+  .filter(x=>x.nomos&&x.url).map(x=>({...x,hay:fold(x.nomos)}));
+const DATA_VER=String(G('DATA_VERSION')||G('TROXO_DATA_VERSION')||'—');
+const DATA_SRC=String(G('DATA_SOURCE')||'Ν.5209/2025, κωδικοποίηση Ν.5322/2026');
+const DATA_ISSUES=[];
+if(!RAW_V)DATA_ISSUES.push('Λείπει ή δεν διαβάζεται το data.js (κατάλογος παραβάσεων).');
+else if(CATALOG.length<200)DATA_ISSUES.push('Ο κατάλογος παραβάσεων έχει μόνο '+CATALOG.length+' εγγραφές — ανέβασε πλήρες data.js.');
+if(!RAW_S)DATA_ISSUES.push('Λείπει ή δεν διαβάζεται το services.js (υπηρεσίες).');
+else if(SERVICES.length<30)DATA_ISSUES.push('Οι υπηρεσίες είναι μόνο '+SERVICES.length+' — ανέβασε πλήρες services.js.');
+if(!RAW_I||!RAW_I.length)DATA_ISSUES.push('Το ευρετήριο νομών λείπει από το services.js — χρησιμοποιείται ενσωματωμένο αντίγραφο.');
+const CATS=[...new Set(CATALOG.map(v=>v.cat))];
+const FREQ_LABELS=['Υπερβολική ταχύτητα','Μέθη','ΚΤΕΟ','Διόδια','Στάθμευση'];
+const FREQ_TEST={'Υπερβολική ταχύτητα':v=>v.cat==='ταχύτητα','Μέθη':v=>v.cat==='αλκοόλ','ΚΤΕΟ':v=>/ΚΤΕΟ/.test(fold(v.name)),'Διόδια':v=>/ΔΙΟΔΙ/.test(fold(v.name+' '+v.info)),'Στάθμευση':v=>v.cat==='στάθμευση'};
+const FREQ_FALLBACK={'Υπερβολική ταχύτητα':'24','Μέθη':'46','ΚΤΕΟ':'90','Διόδια':'','Στάθμευση':'38'};
+const FREQ_MAP=(()=>{const o={};FREQ_LABELS.forEach(l=>{const cnt={};CATALOG.filter(FREQ_TEST[l]).forEach(v=>{if(v.base)cnt[v.base]=(cnt[v.base]||0)+1;});
+  o[l]={article:Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||+a-+b)[0]||FREQ_FALLBACK[l]||'',n:CATALOG.filter(FREQ_TEST[l]).length};});return o;})();
+const VIOL=FREQ_LABELS;
+const CITY_TITLE=(()=>{const m={};const add=(k,v)=>{if(k&&!m[k])m[k]=v;};
+  SERVICES.forEach(s=>{[s.city,s.nomos].forEach(x=>{if(x)add(fold(x),x);});});
+  const gen={'ΒΟΛΟΥ':'Βόλου','ΛΑΡΙΣΑΣ':'Λάρισας','ΛΑΜΙΑΣ':'Λαμίας','ΚΑΛΑΜΑΡΙΑΣ':'Καλαμαριάς','ΘΕΣΣΑΛΟΝΙΚΗΣ':'Θεσσαλονίκης','ΘΕΡΜΗΣ':'Θέρμης','ΛΗΤΗΣ':'Λητής','ΓΡΕΒΕΝΩΝ':'Γρεβενών','ΧΑΛΚΗΔΟΝΑΣ':'Χαλκηδόνας','ΧΑΛΚΗΔΟΝΟΣ':'Χαλκηδόνος','ΑΣΠΡΟΒΑΛΤΑΣ':'Ασπροβάλτας','ΜΟΥΔΑΝΙΩΝ':'Μουδανιών','ΤΟΥΜΠΑΣ':'Τούμπας','ΒΕΡΟΙΑΣ':'Βέροιας','ΕΔΕΣΣΑΣ':'Έδεσσας','ΝΑΟΥΣΑΣ':'Νάουσας','ΓΙΑΝΝΙΤΣΩΝ':'Γιαννιτσών','ΑΛΕΞΑΝΔΡΕΙΑΣ':'Αλεξάνδρειας','ΠΟΛΥΓΥΡΟΥ':'Πολυγύρου','ΑΡΝΑΙΑΣ':'Αρναίας','ΣΤΑΥΡΟΥ':'Σταυρού','ΠΑΤΡΩΝ':'Πατρών','ΑΤΤΙΚΗΣ':'Αττικής','ΘΗΒΩΝ':'Θηβών','ΙΤΕΑΣ':'Ιτέας','ΜΕΤΕΩΡΩΝ':'Μετεώρων','ΠΥΛΗΣ':'Πύλης','ΦΑΡΚΑΔΟΝΑΣ':'Φαρκαδόνας','ΠΛΑΤΕΟΣ':'Πλατέος','ΒΟΛΒΗΣ':'Βόλβης','ΔΕΛΤΑ':'Δέλτα','ΘΕΡΜΑΙΚΟΥ':'Θερμαϊκού','ΚΑΛΛΙΝΔΟΙΩΝ':'Καλλινδοίων','ΛΑΓΚΑΔΑ':'Λαγκαδά','ΩΡΑΙΟΚΑΣΤΡΟΥ':'Ωραιοκάστρου','ΣΟΧΟΥ':'Σοχού','ΧΑΛΑΣΤΡΑΣ':'Χαλάστρας','ΓΡΑΒΙΑΣ':'Γραβιάς','ΑΛΙΑΡΤΟΥ':'Αλιάρτου','ΤΑΝΑΓΡΑΣ':'Τανάγρας','ΣΚΟΥΡΤΩΝ':'Σκουρτών','ΜΕΓΑΛΟΠΟΛΗΣ':'Μεγαλόπολης','ΓΟΡΤΥΝΙΑΣ':'Γορτυνίας','ΚΥΝΟΥΡΙΑΣ':'Κυνουρίας','ΜΕΓΑΡΩΝ':'Μεγάρων','ΜΑΛΓΑΡΩΝ':'Μάλγάρων','ΣΕΡΡΩΝ':'Σερρών','ΚΑΒΑΛΑΣ':'Καβάλας','ΔΡΑΜΑΣ':'Δράμας','ΞΑΝΘΗΣ':'Ξάνθης','ΚΟΜΟΤΗΝΗΣ':'Κομοτηνής','ΡΟΔΟΠΗΣ':'Ροδόπης','ΕΒΡΟΥ':'Έβρου','ΚΙΛΚΙΣ':'Κιλκίς','ΚΟΖΑΝΗΣ':'Κοζάνης','ΦΛΩΡΙΝΑΣ':'Φλώρινας','ΚΑΣΤΟΡΙΑΣ':'Καστοριάς','ΙΩΑΝΝΙΝΩΝ':'Ιωαννίνων','ΑΡΤΑΣ':'Άρτας','ΠΡΕΒΕΖΑΣ':'Πρέβεζας','ΘΕΣΠΡΩΤΙΑΣ':'Θεσπρωτίας','ΚΑΡΔΙΤΣΑΣ':'Καρδίτσας','ΤΡΙΚΑΛΩΝ':'Τρικάλων','ΜΑΓΝΗΣΙΑΣ':'Μαγνησίας','ΠΙΕΡΙΑΣ':'Πιερίας','ΧΑΛΚΙΔΙΚΗΣ':'Χαλκιδικής','ΗΡΑΚΛΕΙΟΥ':'Ηρακλείου','ΧΑΝΙΩΝ':'Χανίων','ΡΟΔΟΥ':'Ρόδου','ΑΘΗΝΩΝ':'Αθηνών','ΠΕΙΡΑΙΑΣ':'Πειραιά','ΤΡΙΠΟΛΗΣ':'Τρίπολης','ΚΑΛΑΜΑΤΑΣ':'Καλαμάτας','ΜΕΣΣΗΝΗΣ':'Μεσσήνης','ΑΡΓΟΥΣ':'Άργους','ΝΑΥΠΛΙΟΥ':'Ναυπλίου','ΚΟΡΙΝΘΟΥ':'Κορίνθου','ΛΟΥΤΡΑΚΙΟΥ':'Λουτρακίου','ΑΜΦΙΣΣΑΣ':'Άμφισσας','ΛΕΒΑΔΕΙΑΣ':'Λειβαδιάς','ΑΙΓΙΟΥ':'Αιγίου','ΟΡΕΣΤΙΑΔΑΣ':'Ορεστιάδας','ΠΥΛΟΥ':'Πύλου','ΑΜΦΙΛΟΧΙΑΣ':'Αμφιλοχίας','ΚΗΦΙΣΙΑΣ':'Κηφισίας','ΜΑΡΟΥΣΙΟΥ':'Μαρουσίου','ΧΑΛΑΝΔΡΙΟΥ':'Χαλανδρίου','ΖΩΓΡΑΦΟΥ':'Ζωγράφου','ΓΛΥΦΑΔΑΣ':'Γλυφάδας','ΒΑΡΗΣ':'Βάρης','ΝΙΚΑΙΑΣ':'Νίκαιας','ΚΟΡΥΔΑΛΛΟΥ':'Κορυδαλλού'};
+  Object.entries(gen).forEach(([k,v])=>add(k,v));return m;})();
+const SVC_CITIES=[...new Set(Object.keys(CITY_TITLE).concat(SERVICES.map(s=>fold(s.city)).filter(Boolean)))];
+function searchCatalog(query,cat,limit){
+  const qf=normText(query),tk=qf?qf.split(/\s+/).filter(Boolean):[],qKey=qf.replace(/[§\s.]/g,'');
+  const wantRep=/ΥΠΟΤΡΟΠ|1Η|2Η|3Η|ΔΕΥΤΕΡΗ|ΤΡΙΤΗ/.test(qf);
+  let list=CATALOG;if(cat)list=list.filter(v=>v.cat===cat);
+  if(!tk.length)return list.slice(0,limit||8);
+  const hit=(v,t)=>{if(v.hay.includes(t))return true;const st=stemW(t);
+    if(st.length>=3&&v.stems.some(s=>s.length>=3&&(s.startsWith(st)||st.startsWith(s))))return true;
+    const k=t.replace(/[§\s.]/g,'');return k.length>=2&&v.artKey.includes(k);};
+  list=list.filter(v=>tk.every(t=>hit(v,t)));
+  const score=v=>{let s=(v.cat==='υποτροπή'&&!wantRep)?100:0;
+    if(v.nameKey.startsWith(tk[0]))s+=0;else if(qKey.length>=2&&v.artKey.startsWith(qKey))s+=1;
+    else if(v.nameKey.includes(tk[0]))s+=2;else s+=4;return s;};
+  return list.slice().sort((a,b)=>score(a)-score(b)||a.id-b.id).slice(0,limit||8);
+}
+function searchServices(query,limit){
+  const qf=normText(query);if(!qf)return{rows:[],links:[]};
+  const tk=qf.split(/\s+/).filter(Boolean),match=h=>tk.every(t=>h.includes(t)),rows=[];
+  SERVICES.forEach(s=>{if(match(s.hay))rows.push({kind:'official',...s});});
+  const hist=new Set();cases.forEach(c=>{if(c.service)hist.add(c.service);if(c.dates&&c.dates.oosDest)hist.add(c.dates.oosDest);});
+  [...hist].sort().forEach(n=>{if(match(fold(n))&&!SERVICES.some(s=>fold(s.name)===fold(n)))rows.push({kind:'history',name:n});});
+  SVC_CITIES.forEach(ct=>{if(!match(ct))return;['ΤΤ '+ct,'ΑΤ '+ct].forEach(n=>{if(!rows.some(r=>fold(r.name)===fold(n)))rows.push({kind:'short',name:n});});});
+  rows.sort((a,b)=>(a.kind==='official'?0:a.kind==='history'?1:2)-(b.kind==='official'?0:b.kind==='history'?1:2));
+  return{rows:rows.slice(0,limit||8),links:SVC_INDEX.filter(x=>match(x.hay)).slice(0,3)};
+}
+const serviceByFold=n=>{const f=fold(n);return SERVICES.find(s=>fold(s.name)===f)||null;};
+
+/* ---------- σταθερές ροής ---------- */
+const ST={search:{l:'Προς Αναζήτηση',t:'info',a:'Εκκρεμεί αναζήτηση τηλεφώνου'},to_call:{l:'Προς Κλήση',t:'info',a:''},informed:{l:'Ενημερώθηκε',t:'warn',a:'Αναμονή 5 ημερών'},appointment:{l:'Κλεισμένο Ραντεβού',t:'info',a:''},no_show:{l:'Μη Προσέλευση',t:'bad',a:'Δεν προσήλθε'},suspended:{l:'Σε Αφαίρεση',t:'info',a:''},to_return:{l:'Προς Απόδοση',t:'bad',a:'Έληξε η αφαίρεση'},inv1_create:{l:'1η Πρόσκληση — δημιουργία',t:'warn',a:'Δημιουργία 1ης'},inv1_next:{l:'1η Πρόσκληση — αποστολή',t:'warn',a:'Αποστολή 1ης'},inv1_sent:{l:'Αναμονή 1ου Αποδεικτικού',t:'warn',a:'Καταχώρηση αποδεικτικού'},inv1_wait:{l:'Αναμονή 10ημ. (1ο Αποδ.)',t:'warn',a:''},inv2_create:{l:'2η Πρόσκληση — δημιουργία',t:'warn',a:'Δημιουργία 2ης'},inv2_next:{l:'2η Πρόσκληση — αποστολή',t:'warn',a:'Αποστολή 2ης'},inv2_sent:{l:'Αναμονή 2ου Αποδεικτικού',t:'warn',a:'Καταχώρηση αποδεικτικού'},inv2_wait:{l:'Αναμονή 10ημ. (2ο Αποδ.)',t:'warn',a:''},inv3_create:{l:'3η Πρόσκληση — δημιουργία',t:'warn',a:'Δημιουργία 3ης'},inv3_next:{l:'3η Πρόσκληση — αποστολή',t:'warn',a:'Αποστολή 3ης'},inv3_sent:{l:'Αναμονή 3ου Αποδεικτικού',t:'warn',a:'Καταχώρηση αποδεικτικού'},inv3_wait:{l:'Αναμονή 10ημ. (3ο Αποδ.)',t:'warn',a:''},transmittal:{l:'Προς διαβίβαση',t:'bad',a:'Δημιουργία διαβιβαστικού'},pol_rem:{l:'Αφαίρεση — εκκρεμεί POL',t:'bad',a:''},pol_ret:{l:'Απόδοση — εκκρεμεί POL',t:'bad',a:''},complaint:{l:'Προς Μήνυση',t:'bad',a:'Υποβολή μήνυσης'},closed:{l:'Ολοκληρωμένη',t:'ok',a:''}};
+const FOLDERS={'Τηλέφωνα':['Με ραντεβού','Χωρίς ραντεβού'],'Προσκλήσεις':['1η πρόσκληση','2η πρόσκληση','3η πρόσκληση'],'Αναμονή αποδεικτικού':['Αναμονή αποδεικτικού'],'Εκκρεμότητες':['Αναζήτηση τηλεφώνου','Αποστολή πρόσκλησης','Διαβίβαση σε Υπηρεσία','Καταχώρηση POL']};
+const REMS={license:'δίπλωμα',plates:'άδεια κυκλοφορίας και πινακίδες',both:'δίπλωμα, άδεια κυκλοφορίας και πινακίδες',foreign:'δίπλωμα εξωτερικού (χωρίς POL)'};
+const BLANK_DATES={phone:'',appt:'',susp:'',return:'',inv1Send:'',inv1Proof:'',inv2Send:'',inv2Proof:'',inv3Send:'',inv3Proof:'',inv1Create:'',inv2Create:'',inv3Create:'',inv1Res:'',inv2Res:'',inv3Res:'',returned:'',closed:'',closedKind:'',callRes:'',searchNone:'',searchFound:'',docRecv:'',complaint:'',polRem:'',polRet:'',oos:'',oosDest:'',oosReason:''};
+let cases=[],folderF='all',stateF='all',invF='all',sortF='flow',q='';
+let view='today',prevView='today',openId=null,waitOpen=false;
+let selMode=false,sel=new Set(),savedViews=[],activeView=-1,bulkSnap=null,undoTimer=0,locked=false;
+
+/* ---------- ημερομηνίες ---------- */
+function easter(y){const a=y%4,b=y%7,c=y%19,d=(19*c+15)%30,e=(2*a+4*b-d+34)%7,m=Math.floor((d+e+114)/31),day=((d+e+114)%31)+1;const dt=new Date(y,m-1,day);dt.setDate(dt.getDate()+13);return dt;}
+function isHoliday(s){const d=new Date(s+'T12:00:00'),y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();
+  if(['1-1','1-6','3-25','5-1','8-15','10-26','10-28','12-25','12-26'].includes(m+'-'+day))return true;
+  const e=easter(y);return[-48,-2,1,50].includes(Math.round((Date.UTC(y,m-1,day)-Date.UTC(e.getFullYear(),e.getMonth(),e.getDate()))/86400000));}
+const isWeekend=s=>{const w=new Date(s+'T12:00:00').getDay();return w===0||w===6;};
+const isNonWorking=s=>isWeekend(s)||isHoliday(s);
+function shiftF(s){const d=new Date(s+'T12:00:00');while(isNonWorking(iso(d)))d.setDate(d.getDate()+1);return iso(d);}
+function shiftB(s){const d=new Date(s+'T12:00:00');while(isNonWorking(iso(d)))d.setDate(d.getDate()-1);return iso(d);}
+function addDays(s,n,dir){if(!s)return'';const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+Number(n));return dir==='backward'?shiftB(iso(d)):shiftF(iso(d));}
+const isDue=s=>!!s&&s<=todayStr();
+
+/* ---------- αποθήκευση ---------- */
+function save(){if(locked){alert('Μόνο για ανάγνωση — απέτυχε η μεταφορά δεδομένων.');return;}try{localStorage.setItem(KEY,JSON.stringify(cases));}catch(e){toast('Αποτυχία αποθήκευσης: '+e.message,'err');}}
+const get=id=>cases.find(x=>x.id===id);
+function ensureDocType(c){if(!c.docType){if(c.violationType==='Απόφαση'){c.docType='Απόφαση';c.violationType='';}else if(c.violationType==='Παραλαβή εγγράφου'){c.docType='Παραλαβή εγγράφου';c.violationType='';}else c.docType='Κλήση';}return c;}
+function migrate(o){
+  const c=clone(o);
+  c.id=c.id||uid();c.plate=normPlate(c.plate||c.ref||'');
+  c.name=String(c.name||c.fullName||'').toUpperCase();
+  c.service=normText(c.service||'');c.phone=String(c.phone||'');
+  c.receivedDate=c.receivedDate||c.dateReceived||todayStr();
+  c.folder=String(c.folder||'').replace(/^[0-9]\.\s*/,'');
+  c.violationType=c.violationType||'';c.fine=c.fine||'';
+  c.removalDays=Number(c.removalDays??c.suspDays??0)||0;
+  c.removalWhat=c.removalWhat||'license';c.requiresLicense=c.removalDays>0;
+  c.protocol=String(c.protocol||'').trim();c.address=String(c.address||'').trim();c.notes=String(c.notes||'');
+  c.vDate=c.vDate||'';c.vPlace=c.vPlace||'';c.vArticle=baseArticle(c.vArticle)||'';c.endRoute=c.endRoute||'';
+  c.dates={...BLANK_DATES,...(c.dates||{})};
+  if(!c.dates.phone&&c.phoneDate)c.dates.phone=c.phoneDate;
+  if(!c.dates.susp&&c.suspDate)c.dates.susp=c.suspDate;
+  if(!Array.isArray(c.calls))c.calls=c.dates.callRes?[{d:c.dates.phone||'',r:c.dates.callRes}]:[];
+  if(!Array.isArray(c.appts))c.appts=c.dates.appt?[{b:'',d:c.dates.appt,s:'citizen',res:''}]:[];
+  if(!Array.isArray(c.undo))c.undo=[];
+  c.history=c.history||[];c.flags=[];
+  c.statePin=c.statePin&&ST[c.statePin.s]?c.statePin:null;c.moveTo=c.moveTo||'';
+  ensureDocType(c);c.schema=8;reconcile(c);return c;
+}
+function load(){
+  try{const cur=localStorage.getItem(KEY);if(cur){cases=(JSON.parse(cur)||[]).map(migrate);tick();return;}}catch(e){}
+  for(const k of OLD_KEYS){let arr=null;try{arr=JSON.parse(localStorage.getItem(k)||'null');}catch(e){continue;}
+    if(!Array.isArray(arr)||!arr.length)continue;
+    try{cases=arr.map(migrate);save();tick();setTimeout(()=>toast('Μεταφέρθηκαν '+cases.length+' υποθέσεις. Τα παλιά δεδομένα δεν διαγράφηκαν.','ok'),500);}
+    catch(e){locked=true;cases=[];setTimeout(()=>alert('Η μεταφορά απέτυχε. Δεν διαγράφηκε τίποτα.'),400);}
+    return;}
+  cases=seedDemo();save();tick();
+}
+function loadViews(){try{savedViews=JSON.parse(localStorage.getItem(LSK_VIEWS)||'[]')||[];}catch(e){savedViews=[];}if(!Array.isArray(savedViews))savedViews=[];}
+const saveViews=()=>localStorage.setItem(LSK_VIEWS,JSON.stringify(savedViews));
+
+/* ---------- φάση ---------- */
+const invDates=D=>[1,2,3].flatMap(n=>[D['inv'+n+'Create'],D['inv'+n+'Send'],D['inv'+n+'Proof']]).filter(Boolean);
+const polNeeded=c=>c.removalWhat!=='foreign';
+const badProof=D=>[1,2,3].some(n=>D['inv'+n+'Res']==='bad');
+const lastAppt=c=>{const a=c.appts||[];return a.length?a[a.length-1]:null;};
+const apptMissed=c=>{const L=lastAppt(c);if(L)return L.res==='missed'||(!!L.d&&todayStr()>L.d);return!!c.dates.appt&&todayStr()>c.dates.appt;};
+const missedDate=c=>{const L=lastAppt(c);return(L&&(L.res==='missed'||(!!L.d&&todayStr()>L.d)))?L.d:c.dates.appt;};
+const liveAppt=c=>{const L=lastAppt(c);return!!(L&&L.d&&L.res!=='missed'&&L.d>=todayStr());};
+const endState=c=>c.endRoute==='complaint'?'complaint':c.endRoute==='transmittal'?'transmittal':(c.docType==='Απόφαση'?'complaint':'transmittal');
+function naturalState(c){
+  const D=c.dates,pol=polNeeded(c);
+  if(D.susp&&!D.polRem&&pol)return'pol_rem';
+  if(D.returned&&!D.polRet&&pol)return'pol_ret';
+  if(D.closed)return'closed';
+  if(D.returned||D.docRecv||D.oos||D.complaint||badProof(D))return'transmittal';
+  if(D.susp)return D.return&&isDue(D.return)?'to_return':'suspended';
+  if(liveAppt(c))return'appointment';
+  if(D.appt&&!invDates(D).length&&apptMissed(c))return'inv1_create';
+  for(let n=3;n>=1;n--){const cr=D['inv'+n+'Create'],se=D['inv'+n+'Send'],pr=D['inv'+n+'Proof'];
+    if(!cr&&!se&&!pr)continue;
+    if(pr)return!isDue(addDays(pr,10))?`inv${n}_wait`:(n===3?endState(c):`inv${n+1}_create`);
+    return se?`inv${n}_sent`:`inv${n}_next`;}
+  const r=D.callRes;
+  if(r==='noanswer'||r==='refused')return'inv1_create';
+  if(r==='informed')return D.phone&&!isDue(addDays(D.phone,5))?'informed':'inv1_create';
+  if(!phoneList(c.phone).length)return D.searchNone?'inv1_create':'search';
+  return'to_call';
+}
+function derive(c){const nat=naturalState(c),p=c.statePin;if(p&&ST[p.s]){if(nat===p.base){c.statePin=null;return nat;}return p.s;}return nat;}
+const TR={expired:{l:'Έληξε η προθεσμία του 3ου αποδεικτικού',a:'Άμεση επιστροφή στην υπηρεσία ανάθεσης'},badproof:{l:'Αρνητικό αποδεικτικό',a:'Επιστροφή στην υπηρεσία ανάθεσης'},oos:{l:'Εκτός αρμοδιότητας',a:'Διαβίβαση στην αρμόδια υπηρεσία'},received:{l:'Παρέλαβε το έγγραφο',a:'Διαβίβαση στην υπηρεσία ανάθεσης'},returned:{l:'Ολοκληρώθηκε η αφαίρεση και η απόδοση',a:'Διαβίβαση στην υπηρεσία ανάθεσης'},complaint:{l:'Η μήνυση υποβλήθηκε',a:'Διαβιβαστικό ενημέρωσης'}};
+const transReason=c=>{const D=c.dates;return D.complaint?'complaint':D.oos?'oos':badProof(D)?'badproof':D.returned?'returned':D.docRecv?'received':'expired';};
+function stOf(c){const b=ST[c.state]||{l:'Άγνωστη',t:'bad',a:''};
+  if(c.state==='transmittal'){const r=TR[transReason(c)];return{...b,l:r.l,a:r.a};}
+  if(c.state==='complaint')return{...b,l:'Έληξε η προθεσμία του 3ου αποδεικτικού',a:'Υποβολή μήνυσης'};
+  return b;}
+function SUGGEST(c){const s=c.state;
+  if(s==='closed')return'';
+  if(s==='pol_rem'||s==='pol_ret')return'Εκκρεμότητες - Καταχώρηση POL';
+  if(s==='search')return'Εκκρεμότητες - Αναζήτηση τηλεφώνου';
+  if(['to_call','informed'].includes(s))return'Τηλέφωνα - Χωρίς ραντεβού';
+  if(s==='appointment')return'Τηλέφωνα - Με ραντεβού';
+  if(/^inv\d_(create|next)$/.test(s))return'Εκκρεμότητες - Αποστολή πρόσκλησης';
+  if(/^inv\d_sent$/.test(s))return'Αναμονή αποδεικτικού';
+  const m=/^inv(\d)_wait$/.exec(s);if(m)return'Προσκλήσεις - '+m[1]+'η πρόσκληση';
+  if(s==='transmittal')return'Εκκρεμότητες - Διαβίβαση σε Υπηρεσία';
+  return'';}
+function reconcile(c){const D=c.dates;let ch=false;
+  if(D.susp&&c.removalDays){const r=addDays(D.susp,c.removalDays);if(r!==D.return){D.return=r;ch=true;}}
+  const st=derive(c);if(c.state!==st){c.state=st;ch=true;}
+  const mv=SUGGEST(c),nm=(mv&&mv!==c.folder)?mv:'';if(c.moveTo!==nm){c.moveTo=nm;ch=true;}
+  return ch;}
+function tick(){let ch=false;cases.forEach(c=>{if(reconcile(c))ch=true;});if(ch)save();}
+const lastProof=c=>[3,2,1].map(n=>c.dates['inv'+n+'Proof']).filter(Boolean).sort().pop()||'';
+const proofNo=c=>[3,2,1].find(n=>c.dates['inv'+n+'Proof'])||0;
+
+/* ---------- ιεραρχία «Σήμερα» ---------- */
+function groupOf(c){
+  const s=c.state;if(s==='closed')return null;
+  if(s==='appointment'&&c.dates.appt===todayStr())return'appt';
+  if(s==='search'||s==='to_call')return'start';
+  if(s==='transmittal'||s==='complaint')return'close';
+  if(s==='to_return')return'ret';
+  if(s==='pol_rem'||s==='pol_ret')return'pol';
+  if(/^inv\d_(wait|create)$/.test(s)&&lastProof(c))return'proof';
+  if(/^inv\d_(create|next)$/.test(s))return'send';
+  if(s==='suspended')return'susp';
+  return'wait';
+}
+const GRP=[
+ ['appt','Ραντεβού σήμερα','info','δεσμευμένη ώρα'],
+ ['start','Έναρξη υπόθεσης','go','ξεκινά τη ροή — παλαιότερα πρώτα'],
+ ['close','Διαβιβαστικά / Μήνυση','bad','1 βήμα ως κλείσιμο'],
+ ['ret','Προς απόδοση','bad','έληξε η αφαίρεση'],
+ ['pol','POL σε εκκρεμότητα','bad','μπλοκάρουν τη ροή'],
+ ['proof','Προσκλήσεις · αποδεικτικό','warn','ημέρες από παραλαβή, φθίνουσα'],
+ ['send','Δημιουργία / αποστολή πρόσκλησης','warn','κατά παλαιότητα'],
+ ['susp','Σε αφαίρεση','','λήξη πλησιάζει'],
+ ['wait','Σε αναμονή','','10ήμερα που τρέχουν']];
+const ACTIONABLE=['appt','start','close','ret','pol','proof','send'];
+function groupSort(k){
+  if(k==='start')return (a,b)=>ageOf(b.receivedDate)-ageOf(a.receivedDate);
+  if(k==='proof')return (a,b)=>ageOf(lastProof(b))-ageOf(lastProof(a))||proofNo(b)-proofNo(a);
+  if(k==='send')return (a,b)=>ageOf(b.receivedDate)-ageOf(a.receivedDate);
+  if(k==='susp')return (a,b)=>(a.dates.return||'9999').localeCompare(b.dates.return||'9999');
+  if(k==='appt')return (a,b)=>(a.dates.appt||'').localeCompare(b.dates.appt||'');
+  return (a,b)=>ageOf(b.receivedDate)-ageOf(a.receivedDate);
+}
+function toneOf(c,k){
+  if(k==='close'||k==='ret'||k==='pol')return'o';
+  if(k==='start')return ageOf(c.receivedDate)>7?'u':'g';
+  if(k==='proof'||k==='send')return'u';
+  return'';
+}
+
+/* ---------- undo / toast ---------- */
+function hideToast(){$('#undoBar').hidden=true;clearTimeout(undoTimer);}
+function bulkUndoBar(label){const b=$('#undoBar');b.dataset.id='';b.querySelector('span').textContent=label;b.hidden=false;
+  clearTimeout(undoTimer);undoTimer=setTimeout(()=>{hideToast();bulkSnap=null;},9000);
+  b.querySelector('button').onclick=()=>{if(bulkSnap){cases=bulkSnap.map(migrate);bulkSnap=null;save();hideToast();render();toast('Αναιρέθηκε','ok');}};}
+function showToast(c,label){const b=$('#undoBar');b.dataset.id=c.id;b.querySelector('span').textContent=label;b.hidden=false;
+  b.querySelector('button').onclick=()=>{const cc=get(b.dataset.id);if(cc)undoLast(cc);};
+  clearTimeout(undoTimer);undoTimer=setTimeout(hideToast,9000);}
+function act(c,label,fn){const before=clone(c);fn();reconcile(c);
+  c.undo=c.undo||[];c.undo.push({l:label,t:Date.now(),snap:before});if(c.undo.length>8)c.undo.shift();
+  save();render();showToast(c,label);}
+function undoLast(c){const u=(c.undo||[]).pop();if(!u)return;const i=cases.indexOf(c),r=migrate(u.snap);r.undo=c.undo;cases[i]=r;save();hideToast();render();toast('Αναίρεση: '+u.l,'ok');}
+function toast(msg,kind){const t=document.createElement('div');t.className='tst'+(kind?' '+kind:'');t.textContent=msg;$('#toast').appendChild(t);setTimeout(()=>t.remove(),3400);}
+
+/* ---------- wizard ---------- */
+const dlgW=$('#dlgWizard');
+function wiz(title,desc,body,btns){
+  $('#wT').textContent=title;$('#wD').textContent=desc||'';$('#wB').innerHTML=body||'';
+  const a=$('#wA');a.innerHTML='';
+  btns.concat([{t:'Άκυρο',c:'ghost'}]).forEach(b=>{const x=document.createElement('button');x.type='button';x.className='btn '+(b.c||'');x.textContent=b.t;
+    x.onclick=()=>{if(b.v&&!b.v())return;dlgW.close();if(b.f)b.f();};a.append(x);});
+  if(!dlgW.open)dlgW.showModal();}
+const T=()=>todayStr(),dv=()=>$('#wV').value,dIn=v=>`<input type="date" id="wV" value="${v||T()}">`;
+const dateWiz=(t,d,cb)=>wiz(t,d,dIn(),[{t:'Αποθήκευση',c:'pri',v:dv,f:()=>cb(dv())}]);
+
+/* ---------- ενέργειες ---------- */
+const syncCall=c=>{const L=lastBy(c.calls);c.dates.phone=L?(L.d||''):'';c.dates.callRes=L?L.r:'';};
+const syncAppt=c=>{const a=c.appts||[],L=a[a.length-1];c.dates.appt=L?L.d:'';};
+function addAppt(c,d,b,s){c.appts=c.appts||[];const prev=c.appts[c.appts.length-1],D=c.dates;
+  if(prev&&prev.d&&prev.d<b&&!D.susp&&!D.docRecv)prev.res='missed';
+  c.appts.push({b,d,s:s||(prev&&prev.res!=='missed'?'change':'citizen'),res:''});syncAppt(c);}
+const recCall=(c,d,r,appt)=>act(c,'Κλήση',()=>{c.calls=c.calls||[];c.calls.push({d,r});if(r==='booked'&&appt)addAppt(c,appt,d,'call');syncCall(c);});
+const actSearch=c=>wiz('Αποτέλεσμα αναζήτησης','Ημερομηνία αναζήτησης:',dIn(),[
+ {t:'Βρέθηκε τηλέφωνο',c:'ok',v:dv,f:()=>{const d=dv();wiz('Τηλέφωνο','Πληκτρολογήστε τον αριθμό:','<input type="tel" id="wP">',[{t:'Αποθήκευση',c:'pri',v:()=>$('#wP').value.trim(),f:()=>{const p=$('#wP').value.trim();act(c,'Βρέθηκε τηλέφωνο',()=>{c.phone=p;c.dates.searchNone='';c.dates.searchFound=d;});}}]);}},
+ {t:'Δεν βρέθηκε',c:'bad',v:dv,f:()=>{const d=dv();act(c,'Δεν βρέθηκε τηλέφωνο',()=>{c.dates.searchNone=d;c.dates.searchFound='';});}}]);
+const actCall=c=>wiz('Έγινε κλήση','Ημερομηνία κλήσης:',dIn(),[
+ {t:'Δεν απάντησε',c:'bad',v:dv,f:()=>recCall(c,dv(),'noanswer')},
+ {t:'Έκλεισε ραντεβού',c:'ok',v:dv,f:()=>{const d=dv();dateWiz('Ημερομηνία ραντεβού','Επιλέξτε ημερομηνία:',v=>recCall(c,d,'booked',v));}},
+ {t:'Δεν έκλεισε ραντεβού',v:dv,f:()=>recCall(c,dv(),'informed')}]);
+const markNoShow=c=>act(c,'Δεν προσήλθε',()=>{c.appts=c.appts||[];if(!c.appts.length&&c.dates.appt)c.appts.push({b:'',d:c.dates.appt,s:'call',res:''});const L=c.appts[c.appts.length-1];if(L)L.res='missed';});
+const actAppt=c=>dateWiz('Ραντεβού','Ημερομηνία ραντεβού:',v=>act(c,'Ραντεβού',()=>addAppt(c,v,T())));
+const remOpts=cur=>Object.entries(REMS).map(([k,v])=>`<option value="${k}"${k===cur?' selected':''}>${esc(cap1(v))}</option>`).join('');
+const actRemoval=c=>wiz('Έγινε αφαίρεση',c.removalDays?'Ημερομηνία αφαίρεσης ('+c.removalDays+' ημέρες):':'Ημερομηνία αφαίρεσης και ημέρες:',
+ dIn()+(c.removalDays?'':'<input type="number" id="wN" min="1" placeholder="Ημέρες αφαίρεσης">')+`<select id="wW">${remOpts(c.removalWhat||'license')}</select>`,
+ [{t:'Αποθήκευση',c:'pri',v:()=>dv()&&(c.removalDays||Number(($('#wN')||{}).value)>0),f:()=>{const d=dv(),n=c.removalDays||Number($('#wN').value),w=$('#wW').value;
+   act(c,'Αφαίρεση',()=>{c.removalDays=n;c.requiresLicense=true;c.removalWhat=w;c.dates.susp=d;});}}]);
+const actPolRem=c=>dateWiz('POL αφαίρεσης','Ημερομηνία καταχώρησης στο POL:',v=>act(c,'POL αφαίρεσης',()=>{c.dates.polRem=v;}));
+const actPolRet=c=>dateWiz('POL απόδοσης','Ημερομηνία καταχώρησης στο POL:',v=>act(c,'POL απόδοσης',()=>{c.dates.polRet=v;}));
+const actDeliver=c=>dateWiz('Έγινε απόδοση','Ημερομηνία απόδοσης:',v=>act(c,'Απόδοση',()=>{c.dates.returned=v;}));
+const actReceived=c=>dateWiz('Παρέλαβε το έγγραφο','Ημερομηνία παραλαβής:',v=>act(c,'Παραλαβή εγγράφου',()=>{c.dates.docRecv=v;}));
+const actApptOutcome=c=>wiz('Εξέλιξη ραντεβού','Τι έγινε στο ραντεβού;','',[
+ {t:'Προσήλθε — έγινε αφαίρεση',c:'ok',f:()=>actRemoval(c)},
+ {t:'Προσήλθε — παρέλαβε το έγγραφο',f:()=>actReceived(c)},
+ {t:'Δεν προσήλθε',c:'bad',f:()=>markNoShow(c)}]);
+const ORDW=['','1η','2η','3η'];
+const createInv=(c,n)=>{if(!inviteProceed(c))return;
+  dateWiz(`Δημιουργία ${n}ης πρόσκλησης`,'Θα δημιουργηθεί αρχείο Word. Ημερομηνία δημιουργίας:',v=>{act(c,`Δημιουργία ${n}ης πρόσκλησης`,()=>{c.dates['inv'+n+'Create']=v;});sendInvitation(c,n,v);});};
+const invite=(c,n)=>dateWiz(`Στάλθηκε η ${ORDW[n]} πρόσκληση`,'Ημερομηνία αποστολής:',v=>act(c,`Αποστολή ${n}ης πρόσκλησης`,()=>{c.dates['inv'+n+'Send']=v;}));
+const proof=(c,n)=>wiz(`Επέστρεψε το ${n}ο αποδεικτικό`,'Ημερομηνία που αναγράφεται στο αποδεικτικό:',dIn(),[
+ {t:'Βρέθηκε ή μένει εκεί',c:'ok',v:dv,f:()=>{const d=dv();act(c,`Αποδεικτικό ${n}ης`,()=>{c.dates['inv'+n+'Proof']=d;c.dates['inv'+n+'Res']='ok';});}},
+ {t:'Λάθος διεύθυνση / δεν μένει εκεί',c:'bad',v:dv,f:()=>{const d=dv();act(c,`Αποδεικτικό ${n}ης`,()=>{c.dates['inv'+n+'Proof']=d;c.dates['inv'+n+'Res']='bad';});}}]);
+const actTransmit=c=>dateWiz('Δημιουργία διαβιβαστικού','Ημερομηνία διαβιβαστικού:',v=>act(c,'Διαβιβαστικό',()=>{c.dates.closed=v;c.dates.closedKind=c.dates.complaint?'complaint':'transmittal';}));
+const actComplaint=c=>dateWiz('Υποβλήθηκε η μήνυση','Ημερομηνία υποβολής:',v=>act(c,'Μήνυση',()=>{c.dates.complaint=v;}));
+const actOOS=c=>wiz('Εκτός αρμοδιότητας','Διαβίβαση σε άλλη υπηρεσία:',
+ dIn()+'<input type="text" id="wDest" placeholder="Υπηρεσία προορισμού" autocomplete="off"><input type="text" id="wRsn" placeholder="Αιτιολογία" autocomplete="off">',
+ [{t:'Αποθήκευση',c:'pri',v:()=>dv()&&$('#wDest').value.trim(),f:()=>{const d=dv(),dest=normText($('#wDest').value),r=$('#wRsn').value.trim().toUpperCase();act(c,'Εκτός αρμοδιότητας',()=>{c.dates.oos=d;c.dates.oosDest=dest;c.dates.oosReason=r;});}}]);
+const ACT={search:['Αποτέλεσμα αναζήτησης',actSearch],to_call:['Έγινε κλήση',actCall],informed:['Έκλεισε ραντεβού',actAppt],appointment:['Εξέλιξη ραντεβού',actApptOutcome],pol_rem:['Καταχωρήθηκε στο POL',actPolRem],pol_ret:['Καταχωρήθηκε στο POL',actPolRet],to_return:['Έγινε απόδοση',actDeliver],
+ inv1_create:['Δημιουργία 1ης πρόσκλησης',c=>createInv(c,1)],inv1_next:['Στάλθηκε η 1η πρόσκληση',c=>invite(c,1)],inv1_sent:['Επέστρεψε το 1ο αποδεικτικό',c=>proof(c,1)],
+ inv2_create:['Δημιουργία 2ης πρόσκλησης',c=>createInv(c,2)],inv2_next:['Στάλθηκε η 2η πρόσκληση',c=>invite(c,2)],inv2_sent:['Επέστρεψε το 2ο αποδεικτικό',c=>proof(c,2)],
+ inv3_create:['Δημιουργία 3ης πρόσκλησης',c=>createInv(c,3)],inv3_next:['Στάλθηκε η 3η πρόσκληση',c=>invite(c,3)],inv3_sent:['Επέστρεψε το 3ο αποδεικτικό',c=>proof(c,3)],
+ transmittal:['Δημιουργία διαβιβαστικού',actTransmit],complaint:['Υποβλήθηκε η μήνυση',actComplaint]};
+const actFor=c=>(c.state==='transmittal'&&c.dates.complaint)?['Δημιουργία διαβιβαστικού ενημέρωσης',actTransmit]:ACT[c.state];
+const FINAL=['transmittal','complaint','closed'];
+function secondary(c){const s=c.state,out=[];
+  if(s==='closed')return[['Άνοιγμα υπόθεσης',x=>{if(confirm('Να ανοίξει ξανά η υπόθεση;'))act(x,'Άνοιγμα υπόθεσης',()=>{x.dates.closed='';x.dates.closedKind='';x.statePin=null;});}]];
+  const li=[3,2,1].find(k=>c.dates['inv'+k+'Create']);
+  if(li)out.push(['Λήψη '+li+'ης πρόσκλησης (Word)',x=>{if(inviteProceed(x))sendInvitation(x,li,x.dates['inv'+li+'Create']);}]);
+  if(c.removalDays>0&&!c.dates.susp)out.push(['Έγινε αφαίρεση',actRemoval]);
+  if(!(c.removalDays>0)&&!c.dates.docRecv&&!c.dates.susp)out.push(['Παρέλαβε το έγγραφο',actReceived]);
+  if(c.dates.susp&&!c.dates.returned)out.push(['Έγινε απόδοση',actDeliver]);
+  if(!c.dates.oos)out.push(['Εκτός αρμοδιότητας',actOOS]);
+  return out;}
+
+/* ---------- πληρότητα πρόσκλησης ---------- */
+function inviteMissing(c){
+  const m=[];
+  if(!String(c.protocol||'').trim())m.push('Αριθμός πρωτοκόλλου (χειροκίνητα)');
+  if(!String(c.name||'').trim())m.push('Ονοματεπώνυμο');
+  else if(!/\bΤΟΥ\b|\bΤΗΣ\b/.test(String(c.name).toUpperCase()))m.push('Πατρώνυμο (… ΤΟΥ …)');
+  if(!String(c.address||'').trim())m.push('Διεύθυνση κατοικίας');
+  if(!String(c.vArticle||'').trim())m.push('Άρθρο παράβασης');
+  if(!c.vDate)m.push('Ημερομηνία παράβασης');
+  if(!String(c.vPlace||'').trim())m.push('Τόπος παράβασης');
+  if(!String(c.service||'').trim())m.push('Υπηρεσία ανάθεσης');
+  if(!String(c.plate||'').trim())m.push('Πινακίδα οχήματος');
+  return m;
+}
+function inviteProceed(c){
+  const miss=inviteMissing(c);
+  if(!miss.length)return true;
+  const noProto=!String(c.protocol||'').trim();
+  if(noProto){
+    wiz('Λείπει ο αριθμός πρωτοκόλλου','Η πρόσκληση δεν μπορεί να εκδοθεί χωρίς τον δικό μας αριθμό πρωτοκόλλου. Συμπλήρωσέ τον χειροκίνητα (τα χειρόγραφα δεν διαβάζονται από το OCR).',
+      '<ul class="misslist">'+miss.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>',
+      [{t:'Άνοιγμα υπόθεσης',c:'pri',f:()=>{if(c.id&&get(c.id))openForm(c.id,true);else openForm(null,true);}}]);
+    return false;
+  }
+  return confirm('Η πρόσκληση είναι ελλιπής. Λείπουν:\n\n• '+miss.join('\n• ')+'\n\nΝα δημιουργηθεί παρ\' όλα αυτά με κενά;');
+}
+
+/* ---------- Word ---------- */
+const DOCX='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const CRCT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+const crc32=u=>{let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRCT[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;};
+const u8s=s=>new TextEncoder().encode(s);
+const xe=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function zipStore(files){
+  const w16=v=>[v&255,(v>>>8)&255],w32=v=>[v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255];
+  const parts=[],cd=[];let off=0;
+  files.forEach(([name,data])=>{const nm=u8s(name),crc=crc32(data),sz=data.length;
+    const lh=Uint8Array.from([0x50,0x4b,3,4,...w16(20),...w16(0x0800),...w16(0),...w16(0),...w16(0x5D74),...w32(crc),...w32(sz),...w32(sz),...w16(nm.length),...w16(0)]);
+    parts.push(lh,nm,data);
+    cd.push(Uint8Array.from([0x50,0x4b,1,2,...w16(20),...w16(20),...w16(0x0800),...w16(0),...w16(0),...w16(0x5D74),...w32(crc),...w32(sz),...w32(sz),...w16(nm.length),...w16(0),...w16(0),...w16(0),...w16(0),...w32(0),...w32(off)]),nm);
+    off+=lh.length+nm.length+sz;});
+  const cdLen=cd.reduce((s,a)=>s+a.length,0);
+  const end=Uint8Array.from([0x50,0x4b,5,6,...w16(0),...w16(0),...w16(files.length),...w16(files.length),...w32(cdLen),...w32(off),...w16(0)]);
+  const all=[...parts,...cd,end],out=new Uint8Array(all.reduce((s,a)=>s+a.length,0));
+  let p=0;all.forEach(a=>{out.set(a,p);p+=a.length;});return out;}
+const FN_M={ΓΕΩΡΓΙΟΣ:'Γεώργιο',ΙΩΑΝΝΗΣ:'Ιωάννη',ΔΗΜΗΤΡΙΟΣ:'Δημήτριο',ΚΩΝΣΤΑΝΤΙΝΟΣ:'Κωνσταντίνο',ΝΙΚΟΛΑΟΣ:'Νικόλαο',ΧΡΗΣΤΟΣ:'Χρήστο',ΠΑΝΑΓΙΩΤΗΣ:'Παναγιώτη',ΑΝΔΡΕΑΣ:'Ανδρέα',ΕΥΑΓΓΕΛΟΣ:'Ευάγγελο',ΣΤΥΛΙΑΝΟΣ:'Στυλιανό',ΑΘΑΝΑΣΙΟΣ:'Αθανάσιο',ΑΛΕΞΑΝΔΡΟΣ:'Αλέξανδρο',ΘΕΟΔΩΡΟΣ:'Θεόδωρο',ΒΑΣΙΛΕΙΟΣ:'Βασίλειο',ΑΝΑΣΤΑΣΙΟΣ:'Αναστάσιο',ΜΙΧΑΗΛ:'Μιχαήλ',ΠΕΤΡΟΣ:'Πέτρο',ΠΑΥΛΟΣ:'Παύλο',ΣΩΤΗΡΗΣ:'Σωτήρη',ΛΑΜΠΡΟΣ:'Λάμπρο',ΜΑΡΙΟΣ:'Μάριο',ΣΠΥΡΙΔΩΝ:'Σπυρίδωνα',ΧΑΡΑΛΑΜΠΟΣ:'Χαράλαμπο',ΑΠΟΣΤΟΛΟΣ:'Απόστολο',ΓΡΗΓΟΡΗΣ:'Γρηγόρη',ΘΩΜΑΣ:'Θωμά',ΛΕΩΝΙΔΑΣ:'Λεωνίδα',ΣΤΑΥΡΟΣ:'Σταύρο',ΑΓΓΕΛΟΣ:'Άγγελο',ΕΛΕΥΘΕΡΙΟΣ:'Ελευθέριο',ΣΩΚΡΑΤΗΣ:'Σωκράτη',ΚΩΣΤΑΣ:'Κώστα',ΓΙΑΝΝΗΣ:'Γιάννη',ΝΙΚΟΣ:'Νίκο',ΔΗΜΗΤΡΗΣ:'Δημήτρη',ΜΑΝΩΛΗΣ:'Μανώλη',ΦΙΛΑΡΕΤΟΣ:'Φιλάρετο'};
+const FN_F={ΜΑΡΙΑ:'Μαρία',ΕΛΕΝΗ:'Ελένη',ΑΙΚΑΤΕΡΙΝΗ:'Αικατερίνη',ΕΥΑΓΓΕΛΙΑ:'Ευαγγελία',ΔΗΜΗΤΡΑ:'Δήμητρα',ΑΝΑΣΤΑΣΙΑ:'Αναστασία',ΓΕΩΡΓΙΑ:'Γεωργία',ΧΡΙΣΤΙΝΑ:'Χριστίνα',ΣΟΦΙΑ:'Σοφία',ΠΑΡΑΣΚΕΥΗ:'Παρασκευή',ΣΩΤΗΡΙΑ:'Σωτηρία',ΒΑΣΙΛΙΚΗ:'Βασιλική',ΙΩΑΝΝΑ:'Ιωάννα',ΑΝΝΑ:'Άννα',ΕΙΡΗΝΗ:'Ειρήνη',ΦΩΤΕΙΝΗ:'Φωτεινή',ΝΙΚΗ:'Νίκη',ΔΕΣΠΟΙΝΑ:'Δέσποινα',ΜΑΡΙΝΑ:'Μαρίνα'};
+const tcase=w=>{const l=w.toLowerCase();return l.charAt(0).toUpperCase()+l.slice(1);};
+const accWord=w=>/ΕΥΣ$/.test(fold(w))?w.slice(0,-3)+'ΕΑ':/(Ο|Ό|Η|Ή|Α|Ά|Ε|Έ|Υ|Ύ)Σ$/.test(w)?w.slice(0,-1):w;
+const titleWords=s=>String(s||'').trim().split(/\s+/).filter(Boolean).map(w=>CITY_TITLE[fold(w)]||(/^(ΚΑΙ|ΤΗΣ|ΤΟΥ|ΤΗΝ)$/.test(fold(w))?fold(w).toLowerCase():tcase(w))).join(' ');
+function docName(full){
+  let father='';const fm=/^(.*?)\s+(?:ΤΟΥ|ΤΗΣ|του|της)\s+(.+)$/.exec(String(full||'').trim());
+  if(fm){full=fm[1];father=titleWords(fm[2]);}
+  const t=String(full||'').trim().split(/\s+/).filter(Boolean);if(!t.length)return null;
+  const first=t.slice(1).join(' '),fk=fold(first);
+  const fem=!!FN_F[fk]||(!FN_M[fk]&&!!first&&!/[ΣΝΛΡ]$/.test(fk));
+  const sur=fold(fem?t[0]:accWord(t[0].toUpperCase()));
+  const fn=first?(FN_F[fk]||FN_M[fk]||first.split(/\s+/).map(x=>tcase(fem?x:accWord(x.toUpperCase()))).join(' ')):'';
+  return{fem,text:sur+(fn?' '+fn:''),father};}
+function docService(s){
+  const hit=serviceByFold(s);if(hit)return hit.name;
+  const u=fold(s).replace(/\s+/g,' ').trim();if(!u)return'';
+  if(/^(ΥΔΝΣΗ|ΥΠΟΔ)/.test(u))return'Υδ/νση Τροχαίας Θες/νικης';let m;
+  if((m=/^(?:Τ\s*\.?\s*Τ\s*\.?|ΤΤ|ΤΜΗΜΑ\s+ΤΡΟΧΑΙΑΣ)\s+(.+)$/.exec(u)))return'Τμήμα Τροχαίας '+titleWords(m[1]);
+  if((m=/^(?:Α\s*\.?\s*Τ\s*\.?|ΑΤ|ΑΣΤΥΝΟΜΙΚΟ\s+ΤΜΗΜΑ)\s+(.+)$/.exec(u)))return'Αστυνομικό Τμήμα '+titleWords(m[1]);
+  if((m=/^ΥΠΟΔΙΕΥΘΥΝΣΗ\s+ΤΡΟΧΑΙΑΣ\s+(.+)$/.exec(u)))return'Υποδιεύθυνση Τροχαίας '+titleWords(m[1]);
+  if((m=/^ΔΙΕΥΘΥΝΣΗ\s+ΤΡΟΧΑΙΑΣ\s+(.+)$/.exec(u)))return'Διεύθυνση Τροχαίας '+titleWords(m[1]);
+  return titleWords(s);}
+function splitAddr(a){a=String(a||'').trim();if(!a)return{street:'',num:''};
+  const fix=s=>(s===s.toUpperCase()?titleWords(s):s);
+  const m=/^(.*?)[\s,]+(\d+[Α-Ωα-ωA-Za-z]?(?:\s*[-–]\s*\d+)?)$/.exec(a);
+  return m?{street:fix(m[1]),num:m[2]}:{street:fix(a),num:''};}
+let LOGO=null;
+function logoBytes(){if(LOGO)return LOGO;
+  const cv=document.createElement('canvas');cv.width=218;cv.height=192;const x=cv.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,218,192);x.translate(109,96);
+  x.strokeStyle='#123A9E';x.lineWidth=7;x.beginPath();x.arc(0,0,78,0,7);x.stroke();
+  x.lineWidth=2.5;x.beginPath();x.arc(0,0,66,0,7);x.stroke();
+  x.fillStyle='#123A9E';x.beginPath();
+  for(let i=0;i<16;i++){const r=i%2?26:58,a=Math.PI*i/8-Math.PI/2;x.lineTo(r*Math.cos(a),r*Math.sin(a));}
+  x.closePath();x.fill();x.fillStyle='#fff';x.beginPath();x.arc(0,0,17,0,7);x.fill();
+  x.fillStyle='#123A9E';x.font='bold 15px Arial';x.textAlign='center';x.textBaseline='middle';x.fillText('ΕΛ.ΑΣ.',0,1);
+  LOGO=Uint8Array.from(atob(cv.toDataURL('image/png').split(',')[1]),ch=>ch.charCodeAt(0));return LOGO;}
+function buildInviteDocx(c,n,when){
+  const d=String(when||todayStr()),mm=d.slice(5,7),yyyy=d.slice(0,4),LET=['','Α','Β','Γ'][n]||'';
+  const proto=String(c.protocol||'').trim(),nm=docName(c.name),svc=docService(c.service),ad=splitAddr(c.address);
+  const street=ad.street||'________________________',num=ad.num||'____';
+  const nameTxt=nm?nm.text+' του '+(nm.father||'____________'):'______________________________ του ____________';
+  const R=(t,o={})=>`<w:r><w:rPr>${o.b?'<w:b/>':''}${o.i?'<w:i/>':''}${o.sp?`<w:spacing w:val="${o.sp}"/>`:''}${o.sz?`<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>`:''}${o.u?'<w:u w:val="single"/>':''}${o.sup?'<w:vertAlign w:val="superscript"/>':''}</w:rPr><w:t xml:space="preserve">${xe(t)}</w:t></w:r>`;
+  const TAB='<w:r><w:tab/></w:r>';
+  const P=(runs,o={})=>`<w:p><w:pPr>${o.tabs?`<w:tabs>${o.tabs}</w:tabs>`:''}<w:spacing w:before="${o.before||0}" w:after="${o.after||0}" w:line="${o.line||276}" w:lineRule="auto"/>${o.ind?`<w:ind ${o.ind}/>`:''}${o.jc?`<w:jc w:val="${o.jc}"/>`:''}</w:pPr>${runs}</w:p>`;
+  const TBL=(cols,cells)=>`<w:tbl><w:tblPr><w:tblW w:w="${cols.reduce((a,b)=>a+b,0)}" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="40" w:type="dxa"/><w:right w:w="40" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${cols.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid><w:tr>${cells.map((x,i)=>`<w:tc><w:tcPr><w:tcW w:w="${cols[i]}" w:type="dxa"/></w:tcPr>${x}</w:tc>`).join('')}</w:tr></w:tbl>`;
+  const IMG='<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="560000" cy="493000"/><wp:docPr id="1" name="Logo"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="560000" cy="493000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
+  const pr=o=>proto?R(proto,o)+R(LET,{...o,sup:true}):R('______________',o);
+  const vdm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(c.vDate||'');
+  const art=c.vArticle?R(c.vArticle,{}):R('____',{}),
+    dt=vdm?R(vdm[3]+'/'+vdm[2]+'/'+vdm[1],{b:true}):R('____/____/________',{b:true}),
+    st=c.vPlace?R(c.vPlace,{b:true,i:true}):R('________________________',{b:true,i:true}),sv=R(svc||'____________________',{b:true});
+  const left=[P(IMG,{jc:'center',after:60}),
+    P(R('ΕΛΛΗΝΙΚΗ',{sz:21,sp:60})+TAB+R('ΔΗΜΟΚΡΑΤΙΑ',{sz:21,sp:60}),{tabs:'<w:tab w:val="right" w:pos="4440"/>',line:250}),
+    P(R('ΕΛΛΗΝΙΚΗ',{sz:21,sp:60})+TAB+R('ΑΣΤΥΝΟΜΙΑ',{sz:21,sp:60}),{tabs:'<w:tab w:val="right" w:pos="4440"/>',line:250}),
+    P(R('ΔΙΕΥΘΥΝΣΗ ΑΣΤΥΝ.   ΘΕΣ/ΝΙΚΗΣ',{sz:21,sp:30}),{line:250}),
+    P(R('Α. Τ. ΚΑΛΑΜΑΡΙΑΣ',{b:true,u:true,sz:22,sp:20}),{jc:'center',line:250,before:20}),
+    P(R('ΤΑΧ. Δ/ΝΣΗ : Ταξιαρχών 1',{sz:17}),{ind:'w:left="100"',line:240}),
+    P(R('ΤΚ. 55132 Τηλ. 2310-029465,',{sz:18}),{ind:'w:left="100"',line:240}),
+    P(R('Αρμόδιος: Αρχ/κας ΣΙΑΚΟΣ Φιλάρετος',{sz:21}),{ind:'w:left="100"',line:250}),
+    P(R('Αριθ. Πρωτ : ',{b:true,u:true,sz:21})+pr({b:true,u:true,sz:21}),{ind:'w:left="100"',line:250})].join('');
+  const right=[P(R('ΚΑΛΑΜΑΡΙΑ',{sz:23})+R('        / '+mm+' /'+yyyy,{sz:23}),{jc:'right',before:40}),P(R('ΠΡΟΣΚΛΗΣΗ',{b:true,u:true,sz:40,sp:20}),{jc:'center',before:1250})].join('');
+  const gender=nm&&nm.fem?'Την κα':'Τον κ.',gen2=nm&&nm.fem?'στην':'στον';
+  const body=P(R('Παρακαλούμε όπως εντός τριών (3) ημερών και κατά τις ώρες ')+R('09:00 έως 13:00',{i:true,u:true})+
+    R(' Προσέλθετε στο Α.Τ. ΚΑΛΑΜΑΡΙΑΣ οδό Ταξιαρχών 1, φέροντας την παρούσα και αποτανθείτε στον ')+R('Αρχ/κα ΣΙΑΚΟ Φιλάρετο',{sz:20})+
+    R(' που ανέλαβε τη διεκπεραίωση της υποθέσεως σας, που αφορά παράβαση του άρθρου ')+art+R(' του Κ.Ο.Κ. που βεβαιώθηκε την ')+dt+
+    R(' στην οδό ')+st+R(' από ')+sv+R('. Κατά την προσέλευση σας να φέρετε την αστυνομική σας ταυτότητα, τις άδειες οδηγήσεως και κυκλοφορίας καθώς και ΑΦΜ. Στοιχεία οχήματος ')+R(c.plate||'________',{b:true}),
+    {ind:'w:firstLine="400"',line:300,jc:'both',before:40});
+  const noteL=[P(R('ΣΗΜΕΙΩΣΗ:',{b:true,u:true,sz:22}),{ind:'w:left="400"',before:360}),
+    P(R('Η εξυπηρέτηση γίνεται ',{sz:21})+R('αποκλειστικά',{b:true,u:true,sz:21}),{ind:'w:left="400"',line:260}),
+    P(R('κατόπιν ραντεβού',{b:true,u:true,sz:21})+R(' στο τηλ. 2310029465',{sz:21}),{ind:'w:left="400"',line:260})].join('');
+  const noteR=[P(R('Τ Ο',{sz:23,sp:80}),{jc:'center',before:700}),P(R('ΓΡ. ΠΑΡΑΒΑΣΕΩΝ',{sz:23}),{jc:'center'})].join('');
+  const recv=P(R('Στην Καλαμαριά την ____ του μήνα ______________ του έτους 202_ και ώρα ____:____ ο υπογεγραμμένος ________________________________ του Α.Τ. ΚΑΛΑΜΑΡΙΑΣ επέδωσε την υπ\'αριθμ. ')+
+    pr({b:true,u:true})+R(' από ____/'+mm+'/'+yyyy+' πρόσκληση του Α.Τ. ΚΑΛΑΜΑΡΙΑΣ '+gen2+' ')+R(nameTxt,{b:true})+
+    R(' κάτοικο Καλαμαριάς οδό ')+R(street,{b:true})+R(' αριθμ. ')+R(num,{b:true})+
+    R(' με την οποία καλείται να προσέλθει στο κατάστημα του Α.Τ. ΚΑΛΑΜΑΡΙΑΣ εντός τριών (3) ημερών και να αποτανθεί στον ')+R('Αρχ/κα ΣΙΑΚΟ Φιλάρετο',{sz:20})+
+    R(' για υπόθεση που αφορά παράβαση του άρθρου ')+art+R(' του Κ.Ο.Κ. που βεβαιώθηκε την ')+dt+R(' στην οδό ')+st+R(' από ')+sv+
+    R(' και μη ευρών αυτ__ επέδωσα την πρόσκληση στ____________________ ')+R('(Έγινε θυροκόλληση στη πόρτα της οικίας του).',{b:true,u:true}),{line:300,jc:'both',before:60});
+  const sig=t=>P(R('Ο',{sz:22}),{jc:'center',before:200,line:250})+P(R(t,{sz:22}),{jc:'center',line:250});
+  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>`+
+    TBL([4600,5606],[left,right])+P(R('ΠΡΟΣ',{b:true,u:true,sz:24,sp:40}),{jc:'center',before:300,after:160})+
+    P(R(gender+' ',{})+R(nameTxt,{b:true}),{ind:'w:left="850"',before:60})+
+    P(R('Οδός ')+R(street,{b:true})+R(' αριθμ. ')+R(num,{b:true}),{ind:'w:left="850"',after:80})+
+    body+TBL([6400,3806],[noteL,noteR])+P(R('ΑΠΟΔΕΙΚΤΙΚΟ',{b:true,u:true,sz:28,sp:20}),{jc:'center',before:1500,after:60})+recv+
+    P(R('Για βεβαίωση συντάχθηκε το παρόν και υπογράφεται ως ακολούθως.'),{ind:'w:left="400"',before:240,after:120})+
+    TBL([3400,3400,3406],[sig('ΠΑΡΑΛΑΒΩΝ'),sig('ΜΑΡΤΥΡΑΣ'),sig('ΕΠΙΔΟΥΣ')])+P(R('',{sz:2}))+
+    `<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="680" w:right="850" w:bottom="560" w:left="850" w:header="400" w:footer="400" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman" w:eastAsia="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="el-GR" w:eastAsia="el-GR" w:bidi="ar-SA"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>`;
+  const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`;
+  const rl=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+  const dr=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdSt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/></Relationships>`;
+  return zipStore([['[Content_Types].xml',u8s(ct)],['_rels/.rels',u8s(rl)],['word/document.xml',u8s(doc)],['word/styles.xml',u8s(styles)],['word/_rels/document.xml.rels',u8s(dr)],['word/media/logo.png',logoBytes()]]);}
+async function sendInvitation(c,n,when){
+  try{const bytes=buildInviteDocx(c,n,when||todayStr());
+    const fname='PROSKLISI_'+n+'_'+String(c.plate||'draft').replace(/[^Α-ΩA-Z0-9]/gi,'')+'.docx';
+    const blob=new Blob([bytes],{type:DOCX});
+    const file=typeof File==='function'?new File([blob],fname,{type:DOCX}):null;
+    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:'Πρόσκληση '+n+'ης '+(c.plate||'')});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=fname;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1500);
+  }catch(err){console.error(err);alert('Σφάλμα δημιουργίας πρόσκλησης: '+err.message);}}
+
+/* ---------- parser ---------- */
+const OcrParser=(()=>{
+  function prepare(text){
+    const orig=String(text||'').replace(/\[[^\]]*\]/g,' ').replace(/\s+/g,' ').trim();
+    let flat='';for(const ch of orig){const b=ch.normalize('NFD').replace(/[\u0300-\u036f]/g,'').normalize('NFC');flat+=b.length===ch.length?b:ch;}
+    return{orig,flat:flat.length===orig.length?flat:orig};}
+  const isoP=(d,m,y)=>{d=+d;m=+m;y=+y;return(m>=1&&m<=12&&d>=1&&d<=31)?y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'):null;};
+  const MON={ιανουαριου:1,φεβρουαριου:2,μαρτιου:3,απριλιου:4,μαιου:5,ιουνιου:6,ιουλιου:7,αυγουστου:8,σεπτεμβριου:9,οκτωβριου:10,νοεμβριου:11,δεκεμβριου:12};
+  const PL='ΑΒΕΖΗΙΚΜΝΟΡΤΥΧ';
+  const L2G={A:'Α',B:'Β',E:'Ε',Z:'Ζ',H:'Η',I:'Ι',K:'Κ',M:'Μ',N:'Ν',O:'Ο',P:'Ρ',T:'Τ',Y:'Υ',X:'Χ'};
+  const D2L={'0':'Ο','1':'Ι','2':'Ζ','8':'Β'},L2D={'Ο':'0','O':'0','Ι':'1','I':'1','L':'1','|':'1','Ζ':'2','Z':'2','Β':'8','B':'8','S':'5'};
+  const fxL=c=>{c=c.toUpperCase();c=L2G[c]||D2L[c]||c;return PL.includes(c)?c:null;};
+  const fxD=c=>/\d/.test(c)?c:(L2D[c.toUpperCase()]||null);
+  function fixPlate(a,b){const L=[...a].map(fxL),D=[...b].map(fxD);return(L.includes(null)||D.includes(null))?null:L.join('')+'-'+D.join('');}
+  function cand(raw){const s=String(raw||'').toUpperCase().replace(/[‐‑‒–—−]/g,'-').replace(/\s+/g,'');const m=s.match(/([Α-ΩA-Z0-9]{3})-?([Α-ΩA-Z0-9]{4})/);return m?fixPlate(m[1],m[2]):null;}
+  function findPlate(f){
+    for(const re of [/υπ\s*['’΄`]?\s*αριθ\.?\s*/ig,/αριθ\.?\s*κυκλοφοριας\s*/ig,/οδηγος\s+του\s+υπ\.?\s*αριθ\.?\s*/ig]){
+      let a;while((a=re.exec(f))){const tail=f.slice(a.index+a[0].length,a.index+a[0].length+40);
+        const m=tail.match(/^\s*([Α-ΩA-Z0-9]{3})\s*[-‐‑‒–—]?\s*([Α-ΩA-Z0-9]{4})(?![0-9Α-ΩA-Z])/i);
+        if(m){const p=cand(m[1]+'-'+m[2]);if(p)return p;}}}
+    let m;const d=/(?<![A-Za-zΑ-Ωα-ω0-9])([Α-ΩA-Z]{3})\s*[-‐‑‒–—]\s*([0-9]{4})(?![0-9])/g;
+    while((m=d.exec(f))){const p=cand(m[1]+'-'+m[2]);if(p)return p;}
+    const p2=/(?<![A-Za-zΑ-Ωα-ω0-9])([Α-ΩA-Z]{3})\s?([0-9]{4})(?![A-Za-zΑ-Ωα-ω0-9])/g;
+    while((m=p2.exec(f))){const p=cand(m[1]+'-'+m[2]);if(p)return p;}
+    return null;}
+  const DW={μια:1,δυο:2,τρεις:3,τρια:3,τεσσερις:4,τεσσερα:4,πεντε:5,εξι:6,επτα:7,εφτα:7,οκτω:8,οχτω:8,εννια:9,εννεα:9,δεκα:10,δεκαπεντε:15,δεκαεξι:16,δεκαεπτα:17,δεκαοκτω:18,δεκαεννια:19,εικοσι:20,τριαντα:30,σαραντα:40,πενηντα:50,εξηντα:60,εβδομηκοντα:70,εβδομηκοσι:70,ογδοντα:80,ογδοηκοσι:80,ενενηντα:90,εκατο:100,εκατον:100};
+  const DR=Object.keys(DW).sort((a,b)=>b.length-a.length).join('|'),GAP='[\\s,;:.()]*';
+  function findDays(f,warn){
+    let m=f.match(new RegExp('('+DR+')'+GAP+'(?:\\([^)]{0,8}\\))?'+GAP+'ημερ','i'));
+    if(m){const d=DW[m[1].toLowerCase()]||null,par=f.slice(m.index).match(/\((\d{1,3})\)/);
+      if(d&&par&&+par[1]!==d)warn.push('Ημέρες: ολογράφως '+d+', παρένθεση '+par[1]+'. Κρατήθηκαν '+d+' — επιβεβαίωσε.');
+      return d;}
+    m=f.match(/(\d{1,3})\s*(?:\)|\.)?\s*ημερ/i);
+    if(m){warn.push('Ημέρες: βρέθηκε μόνο αριθμητικά ('+m[1]+'). Επιβεβαίωσε από το έγγραφο.');return+m[1];}
+    warn.push('Ημέρες αφαίρεσης: δεν βρέθηκαν.');return null;}
+  const ABBR=[[/Π\s*\.?\s*Ε\s*\.?\s*Ο\s*\.?/g,'Π.Ε.Ο.'],[/Ν\s*\.?\s*Ε\s*\.?\s*Ο\s*\.?\s*Α\s*\.?\s*Κ\s*\.?/g,'Ν.Ε.Ο.Α.Κ.'],[/Ν\s*\.?\s*Ε\s*\.?\s*Ο\s*\.?/g,'Ν.Ε.Ο.'],[/Π\s*\.?\s*Α\s*\.?\s*Θ\s*\.?\s*Ε\s*\.?/g,'Π.Α.Θ.Ε.'],[/(?<![Α-Ω])Ε\s*\.?\s*Ο\s*\.?(?![Α-Ω])/g,'Ε.Ο.'],[/(?<![Α-Ω])Α\s*\.?\s*Μ\s*\.?(?![Α-Ω])/g,'Α.Μ.'],[/(?<![Α-Ω])Θ\s*\.?\s*Α\s*\.?(?![Α-Ω])/g,'Θ.Α.']];
+  const STOP=/\s*(?:,|;|\.\s|\sκαι\s+ωρα|\sδιαπιστωθηκε|\sβεβαιωθηκε|\sκατα\s+παραβαση|\sπροβειτε|\sπαρακαλουμε|\sγια\s+χρονικο|\sκαθωτι|\sμε\s+στοιχεια)/i;
+  function tidyRoad(s){let out=s;ABBR.forEach(([re,rep])=>{out=out.replace(re,rep);});
+    return out.replace(/\s*[-–—]\s*/g,' - ').replace(/\s+/g,' ').trim();}
+  function findPlace(flat,orig,warn){
+    const plusM=flat.match(/(\d{1,3})\s*\+\s*(\d{1,3})/);
+    const kmM=flat.match(/(\d{1,3})\s*(?:ο|η|°)?\s*χλμ/i);
+    const anchor=plusM||kmM;
+    if(anchor){
+      const after=anchor.index+anchor[0].length;
+      let rest=flat.slice(after,after+220);
+      const st=STOP.exec(rest);if(st&&st.index>0)rest=rest.slice(0,st.index);
+      rest=rest.replace(/^\s*(?:χ\s*[\/ήη|]?\s*θ|χλμ\.?|χ\/θ)\s*/i,'').trim();
+      const restO=orig.slice(after,after+220);
+      let toned=rest;
+      if(rest){const p=restO.toLowerCase().indexOf(rest.slice(0,Math.min(12,rest.length)).toLowerCase());
+        if(p>=0)toned=restO.slice(p,p+rest.length);}
+      let km=plusM?plusM[1]+'+'+plusM[2]+' χ/θ':kmM[1]+'ο χλμ.';
+      if(toned){const road=tidyRoad(toned);if(road.length>2)return km+' '+road;
+        warn.push('Τόπος: βρέθηκε χιλιομετρική θέση χωρίς οδό — συμπλήρωσε.');}
+      else warn.push('Τόπος: βρέθηκε χιλιομετρική θέση χωρίς οδό — συμπλήρωσε.');
+      return km;
+    }
+    const st=flat.match(/(?:στην|στη|επι\s+της|επι)\s+(?:οδ(?:ος|ου|ο)?|λεωφ(?:ορου|ορος)?)\s+([Α-Ωα-ωA-Za-z]{3,}(?:\s+[Α-Ωα-ωA-Za-z]{3,}){0,4}?)\s+(\d{1,3}[Α-Ωα-ω]?)(?![0-9])/i);
+    if(st){const p=flat.indexOf(st[1]);const street=p>=0?orig.slice(p,p+st[1].length):st[1];
+      let out=street.trim()+' '+st[2];
+      const tail=flat.slice(st.index+st[0].length,st.index+st[0].length+40);
+      const cm=tail.match(/[,\s]+([Α-Ωα-ω]{4,})/);
+      if(cm){const q=flat.indexOf(cm[1],st.index);out+=', '+(q>=0?orig.slice(q,q+cm[1].length):cm[1]);}
+      return out;}
+    return null;}
+  function findArticle(f){
+    let m=f.match(/αρθρ(?:ου|ο|ων|ος)?\.?\s*(\d{1,3})(?![0-9])/i);
+    if(m&&+m[1]<=150)return{base:m[1],raw:m[0].trim()};
+    m=f.match(/\bαρ\.\s*(\d{1,3})(?![0-9])/i);
+    if(m&&+m[1]<=150)return{base:m[1],raw:m[0].trim()};
+    m=f.match(/(?<!\d)(\d{1,3})\s*[§ςσ]\s*\d/i);
+    if(m&&+m[1]<=150)return{base:m[1],raw:m[0].trim()};
+    m=f.match(/(?<!\d)(\d{2})[§ςσ5]?(\d{1,2})([α-ω]{1,3})(?![α-ω\d])/i);
+    if(m&&+m[1]<=150)return{base:m[1],raw:m[0].trim()};
+    return null;}
+  function findDate(f){
+    let m=f.match(/βεβαιωθ(?:ηκε|εισα|εν)\s*(?:την\s*)?(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/i);
+    if(m)return isoP(m[1],m[2],m[3]);
+    m=f.match(/στις\s*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/i);
+    if(m)return isoP(m[1],m[2],m[3]);
+    m=f.match(/την\s*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/i);
+    if(m)return isoP(m[1],m[2],m[3]);
+    m=f.match(new RegExp('(\\d{1,2})\\s+('+Object.keys(MON).join('|')+')\\s+(20\\d\\d)','i'));
+    if(m)return isoP(m[1],MON[m[2].toLowerCase()],m[3]);
+    m=f.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/);
+    return m?isoP(m[1],m[2],m[3]):null;}
+  function findService(f){
+    const pats=[{re:/ΤΜΗΜΑ\s+ΤΡΟΧΑΙΑΣ\s+([Α-Ω]{3,})/gi,full:'Τμήμα Τροχαίας'},{re:/Τ\s*\.\s*Τ\s*\.\s*([Α-Ω]{3,})/gi,full:'Τμήμα Τροχαίας'},{re:/\bΤΤ\s+([Α-Ω]{3,})/gi,full:'Τμήμα Τροχαίας'},{re:/ΑΣΤΥΝΟΜΙΚΟ\s+ΤΜΗΜΑ\s+([Α-Ω]{3,})/gi,full:'Αστυνομικό Τμήμα'},{re:/Α\s*\.\s*Τ\s*\.\s*([Α-Ω]{3,})/gi,full:'Αστυνομικό Τμήμα'},{re:/\bΑΤ\s+([Α-Ω]{3,})/gi,full:'Αστυνομικό Τμήμα'},{re:/ΥΠΟΔΙΕΥΘΥΝΣΗ\s+ΤΡΟΧΑΙΑΣ\s+([Α-Ω]{3,})/gi,full:'Υποδιεύθυνση Τροχαίας'},{re:/ΔΙΕΥΘΥΝΣΗ\s+ΤΡΟΧΑΙΑΣ\s+([Α-Ω]{3,})/gi,full:'Διεύθυνση Τροχαίας'}];
+    const BLACK=/^(ΚΑΛΑΜΑΡΙΑΣ|ΚΑΛΑΜΑΡΙΑ|ΑΜΕΣΑ|ΠΡΟΒΕΙΤΕ|ΣΤΗΝ|ΤΟΥ|ΤΗΣ)$/;
+    const found=[];
+    for(const p of pats){let m;while((m=p.re.exec(f))){const c=m[1].toUpperCase();
+      if(c.length<3||BLACK.test(c)||!/[ΑΕΙΟΥΩ]/.test(c))continue;
+      found.push({full:p.full+' '+(CITY_TITLE[c]||c.charAt(0)+c.slice(1).toLowerCase()),city:c});}}
+    if(!found.length)return null;
+    return(found.find(r=>!/ΚΑΛΑΜΑΡΙΑ/.test(r.city))||found[0]).full;}
+  const BLACKN=new Set(['ΙΔΙΟΚΤΗΤΗ','ΟΔΟΣ','ΟΔΟΥ','ΚΑΤΟΙΚΟΣ','ΚΑΤΟΙΚΙΑΣ','ΠΕΡΙΦΕΡΕΙΑ','ΔΙΚΑΙΟΔΟΣΙΑΣ','ΑΥΤΟΚΙΝΗΤΟΥ','ΙΧΕ','ΑΡΙΘ','ΠΡΑΞΗ','ΚΛΗΣΗ','ΟΔΗΓΟΣ','ΟΔΗΓΟΥ','ΔΗΛΩΣΗ','ΥΠΕΥΘΥΝΗ','ΠΡΟΣΚΛΗΣΗ','ΠΑΡΑΒΑΤΗ','ΠΑΡΑΒΑΤΗΣ','ΠΑΡΑΒΑΣΗΣ','ΠΑΡΑΒΑΣΗ','ΗΜΕΡΟΜΗΝΙΑ','ΤΑΧΥΤΗΤΑ','ΟΡΙΟΥ','ΤΜΗΜΑ','ΤΡΟΧΑΙΑΣ','ΑΣΤΥΝΟΜΙΚΟ','ΔΙΕΥΘΥΝΣΗ','ΑΡΧΗΓΕΙΟ','ΕΛΛΗΝΙΚΗ','ΔΗΜΟΚΡΑΤΙΑ','ΠΡΟΣ','ΘΕΜΑ','ΣΧΕΤ','ΑΝΤΙΤΥΠΑ','ΕΚΘΕΣΗ','ΑΦΑΙΡΕΣΗ','ΧΡΟΝΟ','ΔΙΑΣΤΗΜΑ','ΑΜΕΣΑ','ΠΡΟΒΕΙΤΕ','ΣΤΗΝ','ΣΤΟ','ΤΗΣ','ΤΟΥ','ΚΑΤΑ','ΑΠΟ','ΝΙΚΟΛΑΟΥ','ΝΙΚΟΛΑΟΣ']);
+  const nameOk=t=>{const u=String(t).toUpperCase();if(u.length<3||u.length>16||!/^[Α-Ω]+$/.test(u)||BLACKN.has(u)||!/[ΑΕΙΟΥΩ]/.test(u))return false;
+    const L=[...u];return 1-L.filter(c=>/[ΑΕΙΟΥΩ]/.test(c)).length/L.length<=0.85;};
+  function findOwner(flat,orig){
+    const re=/(?:στοιχεια\s+)?[α-ω]{0,4}διοκ[α-ω]{0,12}/ig;let m;
+    while((m=re.exec(flat))){
+      const s=m.index+m[0].length,tail=flat.slice(s,s+240),tailO=orig.slice(s,s+240);
+      const toks=tail.split(/[^Α-Ωα-ω]+/).filter(Boolean).map(x=>x.toUpperCase());
+      const parts=[];
+      for(const t of toks){if(/^(ΤΟΥ|ΤΗΣ)$/.test(t))break;if(nameOk(t))parts.push(t);else if(parts.length)break;}
+      if(parts.length>=2){
+        const up=tail.toUpperCase(),last=parts[Math.min(parts.length,3)-1],idx=up.indexOf(last);
+        const rest=idx>=0?up.slice(idx+last.length):up,restO=idx>=0?tailO.slice(idx+last.length):tailO;
+        const pat=rest.match(/(?:ΤΟΥ|ΤΗΣ)\s+([Α-Ω]{3,})/);
+        let patron=null;
+        if(pat){const pi=rest.indexOf(pat[1]);patron=pi>=0?restO.slice(pi,pi+pat[1].length):pat[1];}
+        return{name:parts.slice(0,3).join(' '),patronymic:patron,index:m.index};}}
+    return null;}
+  function findAddress(flat,orig,oi){
+    if(oi==null)return null;
+    const tf=flat.slice(oi,oi+420),to=orig.slice(oi,oi+420);
+    const tone=s=>{const p=tf.indexOf(s);return p>=0?to.slice(p,p+s.length):s;};
+    let m=tf.match(/κατοικ[οσς]\s+([Α-Ωα-ω]{3,})[\s,]+(?:οδ(?:ος|ου|ο)?\s+)?([^,.\n]{3,50}?)\s+(\d+[Α-Ω]?(?:\s*[-–]\s*\d+)?)/i);
+    if(m)return{city:m[1].toUpperCase(),street:tone(m[2].trim()),number:m[3]};
+    m=tf.match(/οδ(?:ος|ου|ο)?\s+([^,.\n]{3,50}?)\s+(\d+[Α-Ω]?)/i);
+    if(m)return{city:null,street:tone(m[1].trim()),number:m[2]};
+    return null;}
+  function parseDocument(raw){
+    const warn=[],info=[],{orig,flat}=prepare(raw),f={};let m;
+    f.plate=findPlate(flat);
+    warn.push(f.plate?'Πινακίδα: '+f.plate+' — έλεγξε οπτικά από το έγγραφο.':'Πινακίδα: δεν βρέθηκε. Συμπλήρωσέ τη χειροκίνητα.');
+    f.service=findService(flat);
+    if(!f.service)warn.push('Υπηρεσία ανάθεσης: δεν βρέθηκε.');
+    if(/διοικητικη\s+αποφαση|αποφαση\s+επιβολης/i.test(flat))f.docType='Απόφαση';
+    else if(/παραλαβη\s+εγγραφου/i.test(flat))f.docType='Παραλαβή εγγράφου';
+    else if(/πραξη\s+βεβαιωσης|κληση/i.test(flat))f.docType='Κλήση';
+    m=flat.match(/αριθ\.?\s*(\d{8,14})\s+απο\s+(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
+    if(m){f.actDate=isoP(m[2],m[3],m[4]);info.push('Αρ. πράξης ανάθεσης: '+m[1]);}
+    f.vDate=findDate(flat);
+    if(!f.vDate&&f.actDate){f.vDate=f.actDate;warn.push('Ημερομηνία παράβασης: εικασία από την πράξη — έλεγξέ την.');}
+    m=flat.match(/ωρα\s*(\d{1,2})[:.](\d{2})/i);
+    if(m)info.push('Ώρα: '+String(m[1]).padStart(2,'0')+':'+m[2]);
+    f.place=findPlace(flat,orig,warn);
+    if(!f.place)warn.push('Τόπος: δεν βρέθηκε με βεβαιότητα.');
+    m=flat.match(/ταχυτητα\s+(\d{2,3})\s*\S{0,6}\s+αντι\s+(?:του\s+)?(?:ανωτατου\s+)?(?:επιτρεπομενου\s+)?(?:οριου\s+)?(?:των\s+)?(\d{2,3})/i);
+    f.speed=m?{measured:+m[1],limit:+m[2]}:null;
+    if(f.speed)info.push('Ταχύτητα: '+f.speed.measured+' αντί '+f.speed.limit+' (υπέρβαση '+(f.speed.measured-f.speed.limit)+')');
+    m=flat.match(/διαπιστωθηκε\s+(.+?)\s*,?\s*κατα\s+παραβαση/i);
+    f.vText=m?m[1]:null;
+    const a=findArticle(flat);
+    f.article=a?a.base:(f.speed?'24':null);
+    if(a)info.push('Πλήρης παραπομπή εγγράφου: '+a.raw);
+    if(!f.article)warn.push('Άρθρο: δεν βρέθηκε.');
+    m=flat.match(/(?:προστιμ\w*|ποιν\w*)\s*(?:\S+\s+){0,3}?(\d{2,6})(?:[.,]\d{2})?\s*(?:€|ευρω)/i);
+    if(m)f.fine=m[1];
+    m=flat.match(/Ν\.?\s*\d{4}\s*\/\s*[\d.\-]*\d{4}/i);
+    if(m)info.push('Νόμος: '+m[0].trim());
+    const om=findOwner(flat,orig);
+    const ai=om?om.index:(flat.indexOf('κατοικ')>=0?flat.indexOf('κατοικ'):0);
+    f.address=findAddress(flat,orig,ai);
+    if(om){f.owner=om.name+(om.patronymic?' ΤΟΥ '+om.patronymic.toUpperCase():'');
+      warn.push('Ονοματεπώνυμο: '+om.name+' — επιβεβαίωσε γράμμα προς γράμμα.');
+      if(!om.patronymic)warn.push('Πατρώνυμο: δεν βρέθηκε — συμπλήρωσε «… ΤΟΥ …».');}
+    else{f.owner=null;warn.push('Ονοματεπώνυμο: δεν βρέθηκε.');}
+    const veh=flat.match(/(Ι\.?\s?Χ\.?\s?Ε\.?|Ι\.?\s?Χ\.?\s?Φ\.?|Ε\.?\s?Δ\.?\s?Χ\.?|Φ\.?\s?Δ\.?\s?Χ\.?|ΕΠΗΟ|ΔΙΚΥΚΛ\w*|ΜΟΤΟΣΙΚΛ\w*|ΜΟΤΟΠΟΔΗΛΑΤ\w*|ΛΕΩΦΟΡΕΙ\w*|ΦΟΡΤΗΓ\w*)/i);
+    if(veh)info.push('Όχημα: '+veh[1].replace(/\s+/g,''));
+    const foreign=/αδεια\w*\s+(?:οδηγησης\s+)?εξωτερικου|αλλοδαπη\s+αδεια|διεθν\w*\s+αδεια/i.test(flat);
+    const rem=/αφαιρεση\s+της\s+αδειας\s+ικανοτητας/i.test(flat)||/αφαιρεση\s+αδειας\s+οδηγησης/i.test(flat)||/αφαιρεση[^.]{0,60}αδειας/i.test(flat);
+    f.removal={required:rem,days:rem?findDays(flat,warn):null,
+      circ:/αφαιρεση[^.]{0,200}?(πινακιδ|αδειας\s+κυκλοφοριας|στοιχει\w+\s+κυκλοφοριας)/i.test(flat),foreign};
+    f.c169=/169\s*π\.?\s*κ/i.test(flat)&&(/απειθεια/i.test(flat)||/αρνηση\s+προσελευσης/i.test(flat));
+    f.noPay=/δεν\s+ειναι\s+υποχρεωτικο[^)]{0,80}αποδοση/i.test(flat);
+    return{fields:f,warnings:warn,info};}
+  function kind(t,speed){const s=String(t||'');
+    if(speed||/ταχυτητ/i.test(s))return'Υπερβολική ταχύτητα';
+    if(/κτεο|τεχνικο\s+ελεγχο/i.test(s))return'ΚΤΕΟ';
+    if(/διοδι/i.test(s))return'Διόδια';
+    if(/σταθμευ/i.test(s))return'Στάθμευση';
+    if(/μεθ|αλκοολ|αιθυλικ/i.test(s))return'Μέθη';
+    return'';}
+  function toForm(res){
+    const f=res.fields,o={notes:[],info:(res.info||[]).slice()};
+    if(f.plate)o.plate=f.plate.replace('-','');
+    if(f.owner)o.name=f.owner;
+    if(f.service)o.service=f.service;
+    if(f.address&&f.address.street)o.address=f.address.street+(f.address.number?' '+f.address.number:'');
+    if(f.address&&f.address.city&&!/^ΚΑΛΑΜΑΡΙΑ/.test(f.address.city))o.info.push('Πόλη κατοικίας: '+(CITY_TITLE[f.address.city]||f.address.city));
+    const k=kind(f.vText,f.speed);if(k)o.violationType=k;
+    if(f.fine)o.fine=f.fine;
+    if(f.docType)o.docType=f.docType;
+    if(f.removal.required){if(f.removal.days)o.removalDays=f.removal.days;
+      o.removalWhat=f.removal.foreign?'foreign':(f.removal.circ?'both':'license');}
+    if(f.vDate)o.vDate=f.vDate;
+    if(f.place)o.vPlace=f.place;
+    if(f.article)o.vArticle=f.article;
+    if(f.c169){o.endRoute='complaint';o.notes.push('ΜΗΝΥΣΗ 169 Π.Κ.');}
+    if(f.noPay)o.notes.push('ΑΠΟΔΟΣΗ ΧΩΡΙΣ ΠΛΗΡΩΜΗ');
+    return o;}
+  return{parseDocument,toForm};
+})();
+
+/* ---------- render ---------- */
+const invDone=c=>{const m=/^inv(\d)_(create|next|sent|wait)$/.exec(c.state);
+  const fs=m?(m[2]==='sent'||m[2]==='wait'?Number(m[1]):Number(m[1])-1):0;
+  const fd=[1,2,3].filter(n=>c.dates['inv'+n+'Send']).length;return Math.min(3,Math.max(fs,fd));};
+function dueOf(c){const D=c.dates,s=c.state,m=/^inv(\d)_/.exec(s),n=m?Number(m[1]):0;
+  if(s==='informed')return addDays(D.phone,5);
+  if(s==='search'||s==='to_call')return c.receivedDate;
+  if(s==='appointment')return D.appt;
+  if(s==='pol_rem')return D.susp;
+  if(s==='pol_ret')return D.returned;
+  if(s==='suspended'||s==='to_return')return D.return;
+  if(/_wait$/.test(s))return addDays(D['inv'+n+'Proof'],10);
+  if(/_create$/.test(s))return n>1?addDays(D['inv'+(n-1)+'Proof'],10):(apptMissed(c)&&D.appt?missedDate(c):(D.callRes==='informed'?addDays(D.phone,5):(D.phone||D.searchNone||'')));
+  if(/_next$/.test(s))return D['inv'+n+'Create'];
+  if(/_sent$/.test(s))return D['inv'+n+'Send'];
+  if(s==='transmittal'){const bp=[1,2,3].map(k=>D['inv'+k+'Res']==='bad'&&D['inv'+k+'Proof']).find(Boolean);return D.oos||D.complaint||bp||D.returned||D.docRecv||addDays(D.inv3Proof,10);}
+  if(s==='complaint')return addDays(D.inv3Proof,10);
+  return'';}
+function pendingLabel(c){const s=c.state,m=/^inv(\d)_(create|next|sent|wait)$/.exec(s);
+  if(m)return{create:'Εκκρεμεί δημιουργία '+m[1]+'ης πρόσκλησης',next:'Εκκρεμεί αποστολή '+m[1]+'ης πρόσκλησης',sent:'Αναμονή '+m[1]+'ου αποδεικτικού',wait:'Αναμονή 10 ημερών από το '+m[1]+'ο αποδεικτικό'}[m[2]];
+  if(s==='appointment')return c.removalDays>0?'Εκκρεμεί αφαίρεση':'Εκκρεμεί παραλαβή εγγράφου';
+  if(s==='transmittal'){const r=TR[transReason(c)];return r.l+' · '+r.a;}
+  return{search:'Εκκρεμεί αναζήτηση τηλεφώνου',to_call:'Εκκρεμεί κλήση',informed:'Αναμονή κλήσης από τον πολίτη',pol_rem:'Εκκρεμεί POL αφαίρεσης',pol_ret:'Εκκρεμεί POL απόδοσης',suspended:'Αναμονή λήξης αφαίρεσης',to_return:'Εκκρεμεί απόδοση',complaint:'Υποβολή μήνυσης',closed:''}[s]||'';}
+function whenText(c){const d=dueOf(c);if(!d)return'';const k=ageOf(d),s=c.state;
+  if(/_sent$/.test(s))return'στάλθηκε '+sd(d)+(k>0?' · πριν '+k+' ημ.':'');
+  if(/_next$/.test(s))return'δημιουργήθηκε '+sd(d);
+  if(s==='appointment')return'ραντεβού '+sd(d)+(k===0?' · σήμερα':k>0?' · πριν '+k+' ημ.':' · σε '+(-k)+' ημ.');
+  if(s==='suspended')return'απόδοση '+sd(d)+' · σε '+(-k)+' ημ.';
+  if(s==='to_return')return'έληξε '+sd(d)+(k>0?' · πριν '+k+' ημ.':'');
+  if(/_wait$/.test(s))return'έως '+sd(d)+(k<0?' · σε '+(-k)+' ημ.':' · σήμερα');
+  return k>0?'από '+sd(d)+' ('+k+' ημ.)':'από σήμερα';}
+function stepInfo(c){const rem=c.removalDays>0||!!c.dates.susp;
+  const S=rem?['Επικοινωνία','Πρόσκληση','Ραντεβού','Αφαίρεση','Απόδοση','Διαβίβαση']:['Επικοινωνία','Πρόσκληση','Ραντεβού','Διαβίβαση'];
+  const M={search:0,to_call:0,informed:0,pol_rem:3,pol_ret:4,appointment:2,suspended:3,to_return:4,transmittal:5,complaint:5};
+  let i=/^inv/.test(c.state)?1:(M[c.state]===undefined?0:M[c.state]);
+  if(!rem&&i>3)i=3;if(c.state==='closed')i=S.length;return{S,i};}
+const stepPct=c=>{const{S,i}=stepInfo(c);return Math.max(6,Math.round(100*i/S.length));};
+const stepper=c=>{const{S,i}=stepInfo(c);
+  return`<div class="steps"><div class="bar">${S.map((l,k)=>`<i class="${k<i?'d':k===i?'c':''}"></i>`).join('')}</div><span>${esc(c.state==='closed'?'Ολοκληρώθηκε':'Βήμα '+(i+1)+' από '+S.length+' · '+S[i]+' · προσκλήσεις '+invDone(c)+'/3')}</span></div>`;};
+const plateChip=(p,cls='')=>{const s=normPlate(p),m=/^([Α-Ω]{3})(\d{4})$/.exec(s);
+  return`<span class="plate ${cls}"><span class="eu"><i>★</i>GR</span><span class="num">${esc(m?m[1]+'-'+m[2]:(s||'—'))}</span></span>`;};
+const apptTag=c=>(c.state!=='appointment'&&c.state!=='closed'&&c.dates.appt&&c.dates.appt>=todayStr()&&!c.dates.susp)?'Ραντεβού '+sd(c.dates.appt):'';
+const IC_PHONE='<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
+const IC_CHEV='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>';
+function ageLine(c,k){
+  if(k==='start'){const a=ageOf(c.receivedDate);return{txt:'από '+sd(c.receivedDate)+' · '+a+' '+(a===1?'ημέρα':'ημέρες'),hot:a>7};}
+  if(k==='proof'){const p=lastProof(c),a=ageOf(p);return{txt:proofNo(c)+'ο αποδεικτικό '+sd(p)+' · '+a+' '+(a===1?'ημέρα':'ημέρες'),hot:a>=10};}
+  if(k==='send'){const a=ageOf(c.receivedDate);return{txt:'παραλαβή '+sd(c.receivedDate)+' · '+a+' ημ.',hot:a>20};}
+  return null;}
+function rowHTML(c,badge,k){
+  const s=stOf(c),pls=(c.state==='closed'||selMode)?[]:phoneList(c.phone);
+  const cls=[k?toneOf(c,k):(c.state==='transmittal'||c.state==='complaint'||c.state==='to_return'||c.state==='pol_rem'||c.state==='pol_ret'?'o':''),sel.has(c.id)?'sel':''].filter(Boolean).join(' ');
+  const n=invDone(c),lead=badge?'':pendingLabel(c);
+  const age=k?ageLine(c,k):null;
+  const wt=whenText(c),at=apptTag(c);
+  const sv=[c.service,c.vArticle?'άρθρο '+c.vArticle:''].filter(Boolean).join(' · ');
+  return`<div class="rc ${cls}" data-open="${c.id}">${selMode?`<span class="rc-box">${sel.has(c.id)?'✓':''}</span>`:''}
+    <div class="rc-m"><div class="rc-t">${plateChip(c.plate,'sm')}<span class="nm">${esc(c.name)}</span>${n?`<em>${n}/3</em>`:''}</div>
+      ${badge||lead?`<div class="rc-s">${badge?`<span class="bd t-${s.t}">${esc(s.l)}</span>`:''}${esc(lead)}</div>`:''}
+      ${age?`<div class="rc-age${age.hot?' hot':''}">${esc(age.txt)}</div>`:''}
+      ${wt||at?`<div class="rc-w">${esc([wt,at].filter(Boolean).join(' · '))}</div>`:''}
+      ${sv?`<div class="rc-w">${esc(sv)}</div>`:''}
+      ${c.moveTo?`<div class="rc-f">Φάκελος → ${esc(c.moveTo)}</div>`:''}
+      <div class="rc-p"><i style="width:${stepPct(c)}%"></i></div></div>
+    ${pls.length?`<a class="rc-call" href="${esc(telHref(pls[0]))}" aria-label="Κλήση ${esc(pls[0])}">${IC_PHONE}</a>`:''}
+    ${selMode?'':`<span class="rc-chev">${IC_CHEV}</span>`}</div>`;}
+const safeRow=(c,b,k)=>{try{return rowHTML(c,b,k);}catch(e){console.error(e);return`<div class="rc o" data-open="${c.id}"><div class="rc-m"><div class="rc-t">${plateChip(c.plate,'sm')}<span class="nm">${esc(c.name)}</span></div><div class="rc-s">Σφάλμα εμφάνισης</div></div></div>`;}};
+function renderToday(){
+  const g={};cases.forEach(c=>{const k=groupOf(c);if(k)(g[k]=g[k]||[]).push(c);});
+  let h='';
+  GRP.forEach(([k,label,tone,note])=>{
+    const a=g[k];if(!a||!a.length)return;
+    a.sort(groupSort(k));
+    if(k==='wait'||k==='susp'){
+      h+=`<button class="gh ${tone}" data-grp="${k}"><span>${label}</span><b>${a.length}</b><span class="gc">${waitOpen?'Απόκρυψη':'Εμφάνιση'}</span></button>`;
+      if(waitOpen)h+=a.map(c=>safeRow(c,false,k)).join('');return;}
+    h+=`<div class="gh ${tone}"><span>${label}</span><b>${a.length}</b>${note?`<small>${esc(note)}</small>`:''}</div>`+a.map(c=>safeRow(c,false,k)).join('');});
+  const mv={};cases.forEach(c=>{if(c.moveTo)mv[c.moveTo]=(mv[c.moveTo]||0)+1;});
+  const mk=Object.keys(mv);
+  if(mk.length)h+=`<div class="gh"><span>Μετακίνηση φακέλων</span><b>${mk.reduce((s,k)=>s+mv[k],0)}</b></div>`+mk.map(f=>`<button class="btn ghost sm" data-mvall="${esc(f)}" style="width:100%;margin-bottom:8px">Μετακινήθηκαν στο «${esc(f)}» (${mv[f]})</button>`).join('');
+  $('#todayList').innerHTML=h||'<div class="empty">Δεν υπάρχουν εκκρεμότητες.</div>';}
+function flowRank(c){const k=groupOf(c);const i=GRP.findIndex(x=>x[0]===k);return i<0?99:i;}
+function sortCases(list){const a=list.slice();
+  if(sortF==='due')a.sort((x,y)=>(dueOf(x)||'9999').localeCompare(dueOf(y)||'9999'));
+  else if(sortF==='recv')a.sort((x,y)=>(y.receivedDate||'').localeCompare(x.receivedDate||''));
+  else if(sortF==='plate')a.sort((x,y)=>x.plate.localeCompare(y.plate));
+  else a.sort((x,y)=>(x.state==='closed')-(y.state==='closed')||flowRank(x)-flowRank(y)||groupSort(groupOf(x)||'wait')(x,y));
+  return a;}
+function filteredCases(){const ql=fold(q).trim();
+  const hay=c=>fold([c.name,c.plate,c.folder,c.phone,c.service,c.protocol,c.address,c.vArticle,c.violationType,c.vPlace,c.notes,fmt(c.receivedDate),...Object.values(c.dates||{}).filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(v)).map(fmt)].join(' '));
+  return cases.filter(c=>(stateF==='all'||c.state===stateF)&&(folderF==='all'||(c.folder||'(χωρίς φάκελο)')===folderF)&&(invF==='all'||(c.state!=='closed'&&invDone(c)===Number(invF)))&&(!ql||hay(c).includes(ql)));}
+function renderViews(){$('#viewsRow').innerHTML=savedViews.map((v,i)=>`<span class="vchip${i===activeView?' on':''}" draggable="true" data-vi="${i}">
+  <button data-vmv="${i}|-1" aria-label="Αριστερά">◀</button><button class="lbl" data-vapply="${i}">${esc(v.name)}</button>
+  <button data-vmv="${i}|1" aria-label="Δεξιά">▶</button><button data-vdel="${i}" aria-label="Διαγραφή">×</button></span>`).join('');}
+function renderCases(){
+  const sc={},fm={},ic={0:0,1:0,2:0,3:0};
+  cases.forEach(c=>{sc[c.state]=(sc[c.state]||0)+1;const f=c.folder||'(χωρίς φάκελο)';fm[f]=(fm[f]||0)+1;if(c.state!=='closed')ic[invDone(c)]++;});
+  $('#fsState').textContent=stateF==='all'?'Όλες':(ST[stateF]||{}).l||stateF;
+  $('#fsFolder').textContent=folderF==='all'?'Όλοι':folderF;
+  $('#fsInv').textContent=invF==='all'?'Όλες':invF==='0'?'Καμία':invF;
+  $('#fsSort').textContent={flow:'Ροή',due:'Προθεσμία',recv:'Παραλαβή',plate:'Πινακίδα'}[sortF];
+  $('#btnClearF').hidden=stateF==='all'&&folderF==='all'&&invF==='all'&&!q;
+  $('#btnSelMode').textContent=selMode?'✕ Έξοδος επιλογής':'☑ Επιλογή πολλών';
+  renderViews();
+  $('#casesList').innerHTML=sortCases(filteredCases()).map(c=>safeRow(c,true,null)).join('')||'<div class="empty">Δεν βρέθηκαν υποθέσεις.</div>';
+  renderCases.opts={sc,fm,ic};renderBulk();}
+function renderBulk(){document.body.classList.toggle('selmode',selMode&&view==='cases');
+  $('#bulkBar').hidden=!(selMode&&view==='cases');$('#bulkN').textContent=sel.size+' επιλεγμένες';$('#bulkMove').disabled=!sel.size;}
+function renderMenu(){
+  const last=localStorage.getItem(LSK_BAK);
+  $('#lastBackup').textContent=last?'Τελευταίο: '+new Date(Number(last)).toLocaleDateString('el-GR'):'Δεν έχει γίνει ακόμα';
+  const a=cases.filter(c=>c.state!=='closed').length;
+  $('#menuSum').textContent=a+' ενεργές · '+(cases.length-a)+' ολοκληρωμένες υποθέσεις';
+  $('#freqList').innerHTML=VIOL.map(v=>{const m=FREQ_MAP[v];
+    return`<div><span>${esc(v)}</span>${m.article?`<code>άρθρο ${esc(m.article)}</code>`:'<code class="none">χειροκίνητα</code>'}</div>`;}).join('');
+  $('#catCount').innerHTML=CATS.map(c=>`<i>${esc(c)} ${CATALOG.filter(v=>v.cat===c).length}</i>`).join('')+`<i style="color:var(--cyan)">σύνολο ${CATALOG.length}</i>`;
+  $('#srcNote').textContent='data.js '+DATA_VER+' · '+DATA_SRC+' · app '+APP_REL+'. services.js: '+SERVICES.length+' υπηρεσίες με στοιχεία, '+SVC_INDEX.length+' ενότητες με σύνδεσμο. Συμπληρώνεται μόνο ο βασικός αριθμός άρθρου.';}
+function timeline(c){
+  const D=c.dates,rows=[],add=(d,k,t,res,note)=>{if(d)rows.push({d,k,t,res,note});};
+  const rem=REMS[c.removalWhat]||REMS.license;
+  add(c.receivedDate,0,'Παραλαβή εγγράφου');
+  add(D.searchFound,4,'Αναζήτηση τηλεφώνου','βρέθηκε');add(D.searchNone,4,'Αναζήτηση τηλεφώνου','δεν βρέθηκε');
+  const CR={noanswer:'δεν απάντησε',informed:'απάντησε, δεν έκλεισε ραντεβού',booked:'έκλεισε ραντεβού',refused:'δεν απάντησε'};
+  (c.calls||[]).forEach((k,i,arr)=>{const ap=(c.appts||[]).find(x=>x.s==='call'&&x.b===k.d);
+    add(k.d||c.receivedDate,5,arr.length>1?(i+1)+'η κλήση':'Κλήση',CR[k.r]||'',[k.r==='booked'&&ap?'ραντεβού '+sd(ap.d):'',k.d?'':'άγνωστη ημερομηνία'].filter(Boolean).join(', '));});
+  (c.appts||[]).forEach((a,i,arr)=>{
+    if(a.s==='citizen')add(a.b,6,'Επικοινώνησε ο πολίτης','ραντεβού '+sd(a.d));
+    else if(a.s==='change')add(a.b,6,'Αλλαγή ραντεβού','νέο ραντεβού '+sd(a.d));
+    const missed=a.res==='missed'||(i===arr.length-1&&todayStr()>a.d&&!D.susp&&!D.docRecv);
+    add(a.d,7,'Ραντεβού',missed?'δεν προσήλθε':'');});
+  [1,2,3].forEach(n=>{add(D['inv'+n+'Create'],10,`Δημιουργία ${n}ης πρόσκλησης`);add(D['inv'+n+'Send'],11,`Αποστολή ${n}ης πρόσκλησης`);
+    add(D['inv'+n+'Proof'],12,`Αποδεικτικό ${n}ης πρόσκλησης`,D['inv'+n+'Res']==='bad'?'δεν βρέθηκε':D['inv'+n+'Res']==='ok'?'βρέθηκε':'');});
+  add(D.docRecv,15,'Παραλαβή εγγράφου από τον πολίτη');
+  add(D.susp,20,'Αφαίρεση: '+rem,'',c.removalDays?c.removalDays+' ημέρες, απόδοση '+sd(D.return):'');
+  add(D.polRem,21,'Καταχώρηση POL (αφαίρεση)');add(D.returned,22,'Απόδοση: '+rem);add(D.polRet,23,'Καταχώρηση POL (απόδοση)');
+  add(D.oos,14,'Εκτός αρμοδιότητας','',[D.oosDest,D.oosReason].filter(Boolean).join(' · '));
+  add(D.complaint,25,'Υποβολή μήνυσης');
+  add(D.closed,30,D.closedKind==='complaint'?'Διαβιβαστικό ενημέρωσης για τη μήνυση':'Διαβιβαστικό προς την Υπηρεσία');
+  return rows.sort((a,b)=>a.d.localeCompare(b.d)||a.k-b.k);}
+const evText=r=>`${r.t} στις ${sd(r.d)}`+(r.res?` (${r.res})`:'')+(r.note?` (${r.note})`:'');
+const calLink=c=>{if(!c.dates.appt)return'#';const d=c.dates.appt.replace(/-/g,'');
+  return'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(`Ραντεβού: ${c.name} (${c.plate})`)+`&dates=${d}T090000/${d}T093000&ctz=Europe/Athens&details=`+encodeURIComponent(`Τηλ: ${c.phone||'—'} | Φάκελος: ${c.folder||'—'}`);};
+function detailHTML(c){
+  const s=stOf(c),a=actFor(c),k=groupOf(c),cls=toneOf(c,k);
+  const pls=c.state==='closed'?[]:phoneList(c.phone),nl=pendingLabel(c),wt=whenText(c),tl=timeline(c);
+  const nO=cases.filter(x=>x.id!==c.id&&normPlate(x.plate)===normPlate(c.plate)).length;
+  const nP=cases.filter(x=>x.id!==c.id&&fold(x.name)===fold(c.name)).length;
+  const hit=serviceByFold(c.service),miss=inviteMissing(c);
+  let sec='';
+  if(c.state==='appointment')sec+=`<a class="btn ghost" target="_blank" rel="noopener" href="${esc(calLink(c))}">Προσθήκη στο Google Calendar</a>`;
+  secondary(c).forEach((x,i)=>{sec+=`<button class="btn ghost" data-b="${c.id}|${i}">${esc(x[0])}</button>`;});
+  const apptBtn=!FINAL.includes(c.state)?`<button class="btn appt" data-r="${c.id}">${liveAppt(c)?'Αλλαγή ραντεβού · '+sd(lastAppt(c).d):'Κλείσιμο ραντεβού'}</button>`:'';
+  const svcLine=hit?`${esc(hit.name)}<br><span style="font-size:12px;color:var(--dim)">${esc([hit.addr||'Δεν αναγράφεται οδός στην επίσημη πηγή',hit.tk,hit.city].filter(Boolean).join(' · '))}</span>`:esc(c.service);
+  const det=[c.service&&`<span><b>Υπηρεσία ανάθεσης:</b> ${svcLine}</span>`,
+    c.folder&&`<span><b>Φάκελος:</b> ${esc(c.folder)}</span>`,
+    c.docType&&`<span><b>Τι αφορά:</b> ${esc(c.docType)}</span>`,
+    c.fine&&`<span><b>Πρόστιμο:</b> ${esc(c.fine)} €</span>`,
+    (c.removalDays>0||c.dates.susp)&&`<span><b>Αφαίρεση:</b> ${c.removalDays>0?esc(c.removalDays)+' ημέρες':'—'} · ${esc(REMS[c.removalWhat]||REMS.license)}</span>`,
+    `<span><b>Πρωτόκολλο:</b> ${c.protocol?esc(c.protocol):'<i style="color:var(--amber)">εκκρεμεί χειροκίνητη καταχώρηση</i>'}</span>`,
+    c.address&&`<span><b>Διεύθυνση:</b> ${esc(c.address)}</span>`,
+    c.violationType&&`<span><b>Παράβαση:</b> ${esc(c.violationType)}</span>`,
+    c.vArticle&&`<span><b>Άρθρο:</b> ${esc(c.vArticle)}</span>`,
+    c.vDate&&`<span><b>Ημ. παράβασης:</b> ${esc(fmt(c.vDate))}</span>`,
+    c.vPlace&&`<span><b>Τόπος:</b> ${esc(c.vPlace)}</span>`,
+    `<span><b>Παραλαβή εγγράφου:</b> ${esc(fmt(c.receivedDate))} · ${ageOf(c.receivedDate)} ημ.</span>`].filter(Boolean).join('');
+  return`<div class="d-hd"><div class="d-pl-row">${plateChip(c.plate,'big')}</div><div class="d-nm">${esc(c.name)}${c.demo?' <span class="bd t-info">ΔΕΙΓΜΑ</span>':''}</div><div><span class="bd t-${s.t}">${esc(s.l)}</span></div></div>
+    ${pls.length?`<div class="tels">${pls.map(x=>`<a class="tel" href="${esc(telHref(x))}">Κλήση ${esc(x)}</a>`).join('')}</div>`:''}
+    <div class="d-next ${cls}"><small>Επόμενη ενέργεια</small>
+      ${a?`<button class="btn pri big" data-a="${c.id}">${esc(a[0])}</button>`:(nl?`<strong>${esc(nl)}</strong>`:'')}
+      ${wt?`<span>${esc(wt)}</span>`:''}${apptTag(c)?`<span>${esc(apptTag(c))}</span>`:''}</div>
+    ${apptBtn}
+    ${miss.length&&c.state!=='closed'?`<div class="mvbox" style="flex-direction:column;align-items:flex-start"><span><b>Για την πρόσκληση λείπουν:</b></span><ul class="misslist">${miss.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="btn ghost sm" data-e="${c.id}">Συμπλήρωση τώρα</button></div>`:''}
+    ${c.moveTo?`<div class="mvbox"><span>Μετακίνηση φακέλου: <b>${esc(c.moveTo)}</b></span><button class="btn ghost" data-mv="${c.id}">Μετακινήθηκε</button></div>`:''}
+    ${stepper(c)}
+    ${sec?`<details class="more"><summary>Άλλες ενέργειες</summary><div class="sec">${sec}</div></details>`:''}
+    <h3 class="d-h">Ιστορικό</h3>
+    <ol class="tl">${tl.map((r,i)=>`<li><i>${i+1}</i><span>${esc(evText(r))}</span></li>`).join('')}${nl&&c.state!=='closed'?`<li class="nx"><i>›</i><span>Επόμενο: ${esc(nl)}${wt?' · '+esc(wt):''}</span></li>`:''}</ol>
+    <h3 class="d-h">Στοιχεία</h3><div class="det">${det}</div>${c.notes?`<div class="notes">${esc(c.notes)}</div>`:''}
+    ${nO?`<button class="linkbtn" data-p="${esc(normPlate(c.plate))}">Άλλες υποθέσεις με την ίδια πινακίδα: ${nO}</button>`:''}
+    ${nP?`<button class="linkbtn" data-p="${esc(c.name)}">Άλλες υποθέσεις του ίδιου προσώπου: ${nP}</button>`:''}
+    <div class="row"><button class="btn" data-e="${c.id}">Επεξεργασία</button>${(c.undo||[]).length?`<button class="btn ghost" data-u="${c.id}">Αναίρεση: ${esc(c.undo[c.undo.length-1].l)}</button>`:''}</div>`;}
+function checkBackup(){const last=localStorage.getItem(LSK_BAK);$('#backupWarning').hidden=!(!last||(Date.now()-Number(last))>7*86400000);}
+function renderDemo(){const n=cases.filter(c=>c.demo).length;$('#demoBanner').hidden=!n;$('#demoCount').textContent=n+' υποθέσεις';}
+function renderData(){$('#dataBanner').hidden=!DATA_ISSUES.length;$('#dataBannerTxt').textContent=DATA_ISSUES.join(' ');}
+function render(){
+  tick();
+  if(view==='case'&&!get(openId)){view=prevView;openId=null;}
+  document.querySelectorAll('.view').forEach(v=>{v.hidden=v.id!=='view-'+view;});
+  const navOn=view==='case'?prevView:view;
+  document.querySelectorAll('.nav [data-nav]').forEach(b=>b.classList.toggle('on',b.dataset.nav===navOn));
+  $('#btnBack').hidden=view!=='case';
+  $('#viewTitle').textContent={today:'Σήμερα',cases:'Υποθέσεις',menu:'Μενού',case:'Υπόθεση'}[view];
+  $('#viewSub').textContent=view==='today'?new Date().toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'numeric'}):'';
+  const un=cases.filter(c=>ACTIONABLE.includes(groupOf(c))).length;
+  const nb=$('#nbToday');nb.hidden=!un;nb.textContent=un;
+  if(view==='today')renderToday();else if(view==='cases')renderCases();else if(view==='menu')renderMenu();else $('#caseBody').innerHTML=get(openId)?detailHTML(get(openId)):'';
+  checkBackup();renderDemo();renderData();renderBulk();}
+function setView(v,id){if(v==='case'){if(view!=='case')prevView=view;openId=id;history.pushState({v:'case'},'');}else openId=null;view=v;render();scrollTo(0,0);}
+function openPick(title,opts,cur,cb){
+  $('#pickT').textContent=title;const box=$('#pickB');box.innerHTML='';
+  opts.forEach(o=>{const b=document.createElement('button');b.type='button';b.className='pickopt'+(o.v===cur?' on':'');
+    b.innerHTML=`<span>${esc(o.l)}</span>`+(o.n!=null?`<b>${o.n}</b>`:'');
+    b.onclick=()=>{$('#dlgPick').close();cb(o.v);};box.appendChild(b);});
+  $('#dlgPick').showModal();}
+$('#btnPickClose').onclick=()=>$('#dlgPick').close();
+
+/* ---------- φόρμα ---------- */
+const F=$('#caseForm'),dlgF=$('#dlgForm'),E=F.elements;
+function folderOpts(cur){
+  let h='<option value="">—</option>';const std=[];
+  for(const[g,subs]of Object.entries(FOLDERS))h+=`<optgroup label="${esc(g)}">`+subs.map(s=>{const v=subs.length===1?g:g+' - '+s;std.push(v);return`<option value="${esc(v)}">${esc(s)}</option>`;}).join('')+'</optgroup>';
+  const extra=[...new Set(cases.map(c=>c.folder).filter(f=>f&&!std.includes(f)))].sort();
+  if(extra.length)h+='<optgroup label="Προσαρμοσμένοι">'+extra.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')+'</optgroup>';
+  $('#fFolder').innerHTML=h+'<option value="custom">+ Νέος φάκελος…</option>';
+  if(!cur)$('#fFolder').value='';else{$('#fFolder').value=cur;if($('#fFolder').value!==cur)$('#fFolder').value='';}}
+function allFolders(){const std=[];for(const[g,subs]of Object.entries(FOLDERS))subs.forEach(s=>std.push(subs.length===1?g:g+' - '+s));
+  return std.concat([...new Set(cases.map(c=>c.folder).filter(f=>f&&!std.includes(f)))].sort());}
+const toggles=()=>{$('#fFolderCustomWrap').hidden=$('#fFolder').value!=='custom';
+  const cu=$('#fViol').value==='custom';$('#fViolCustomWrap').hidden=!cu;
+  if(cu)renderViolSug();else $('#violSug').hidden=true;};
+function checkPlate(val){
+  const v=normPlate(val),w=$('#plateWarning'),id=String(F.dataset.id||'');
+  const others=cases.filter(c=>String(c.id)!==id&&normPlate(c.plate)===v);
+  let msg='';
+  if(v&&others.length){const a=others.filter(c=>c.state!=='closed').length;
+    msg=(others.length===1?'Υπάρχει ήδη 1 άλλη υπόθεση':'Υπάρχουν ήδη '+others.length+' άλλες υποθέσεις')+' με αυτή την πινακίδα ('+a+' ενεργές).';}
+  else if(v&&!/^[ΑΒΕΖΗΙΚΜΝΟΡΤΥΧ]{3}[0-9]{4}$/.test(v))msg='Η πινακίδα δεν έχει τη μορφή ΑΑΑ1234 με επιτρεπόμενα γράμματα. Έλεγξέ την.';
+  w.textContent=msg;w.hidden=!msg;}
+E.plate.addEventListener('input',e=>{const el=e.target,p=el.selectionStart,b=el.value.length;
+  el.value=normPlate(el.value);const np=Math.max(0,p-(b-el.value.length));el.setSelectionRange(np,np);checkPlate(el.value);});
+let violCat='';
+function renderViolChips(){$('#violChips').innerHTML=['',...CATS].map(c=>{
+  const n=c?CATALOG.filter(v=>v.cat===c).length:CATALOG.length;
+  return`<button type="button" data-vcat="${esc(c)}" class="${violCat===c?'on':''}">${c?esc(c):'Όλα'}<i>${n}</i></button>`;}).join('');}
+function violRow(v){
+  const fine=/^\d+$/.test(String(v.fine))?v.fine+' €':(v.fine||'—');
+  const b=[`<i class="cat">${esc(v.cat)}</i>`,`<i class="fine">${esc(fine)}</i>`];
+  if(v.cat==='υποτροπή')b.push('<i class="rep">ΥΠΟΤΡΟΠΗ</i>');
+  if(v.crim)b.push('<i class="crim">ΠΛΗΜΜΕΛΗΜΑ</i>');
+  if(v.pts)b.push(`<i class="pts">ΣΕΣΟ ${v.pts}</i>`);
+  if(v.half)b.push('<i class="half">½ πρόστιμο</i>');
+  return`<div class="sug-i"><button type="button" class="pick" data-vid="${v.id}">
+    <span class="t"><b>${esc(v.name)}</b><span class="art">${esc(v.base||'—')}</span></span>
+    <span class="m">${b.join('')}</span>
+    <span class="dt" hidden data-dt="${v.id}">${esc(v.info)}<br><b>Πλήρης παραπομπή:</b> ${esc(v.article)}${v.suspend&&v.suspend!=='-'?`<br><b>Νόμος:</b> ${esc(v.suspend)}`:''}</span>
+    </button><button type="button" class="info" data-vinfo="${v.id}" aria-label="Στοιχεία νόμου">i</button></div>`;}
+function renderViolSug(){
+  const qy=$('#fViolOther').value,res=searchCatalog(qy,violCat,(violCat&&!normText(qy))?60:8);
+  renderViolChips();$('#violSug').hidden=false;$('#violSugN').textContent=res.length?res.length:'';
+  $('#violSugL').innerHTML=!CATALOG.length?'<div class="sug-e">Ο κατάλογος δεν φορτώθηκε (data.js).<br>Γράψε ελεύθερα και συμπλήρωσε το άρθρο χειροκίνητα.</div>'
+    :res.length?res.map(violRow).join('')
+    :`<div class="sug-e">${normText(qy)||violCat?'Καμία αντιστοίχιση.<br>Γράψε ελεύθερα — το άρθρο το βάζεις μόνος σου.':'Γράψε λέξη-κλειδί ή αριθμό άρθρου (π.χ. «κράνος», «ΑμεΑ», «ΛΕΑ», «βυτιοφόρο», «38») ή διάλεξε κατηγορία.'}</div>`;}
+$('#violChips').addEventListener('click',e=>{const b=e.target.closest('[data-vcat]');if(!b)return;violCat=b.dataset.vcat;renderViolSug();});
+$('#violSugL').addEventListener('click',e=>{
+  const inf=e.target.closest('[data-vinfo]');
+  if(inf){const dt=$('#violSugL').querySelector(`[data-dt="${inf.dataset.vinfo}"]`);if(dt){dt.hidden=!dt.hidden;inf.textContent=dt.hidden?'i':'×';}return;}
+  const b=e.target.closest('[data-vid]');if(!b)return;
+  const v=CATALOG.find(x=>x.id===+b.dataset.vid);if(!v)return;
+  $('#fViolOther').value=v.name;E.vArticle.value=v.base||'';
+  const p=$('#violPicked');
+  p.innerHTML=`<span>✓</span><span>${v.base?`Άρθρο <code>${esc(v.base)}</code>`:'Χωρίς αριθμό άρθρου ΚΟΚ — συμπλήρωσέ το χειροκίνητα'} · ${esc(v.article)}<br>Οι ημέρες και το «Προς αφαίρεση» <b>δεν άλλαξαν</b>.</span>`;
+  p.hidden=false;$('#violSug').hidden=true;
+  toast(v.base?'Συμπληρώθηκε άρθρο '+v.base:'Επιλέχθηκε παράβαση χωρίς αριθμό άρθρου','ok');});
+$('#violSugX').onclick=()=>{$('#violSug').hidden=true;};
+$('#fViolOther').addEventListener('input',()=>{$('#violPicked').hidden=true;renderViolSug();});
+$('#fViolOther').addEventListener('focus',()=>{if($('#fViol').value==='custom')renderViolSug();});
+function svcRow(r,scope){
+  if(r.kind==='official')return`<button type="button" class="sug-i" data-svc="${esc(r.name)}" data-scope="${scope}" style="display:block">
+    <span class="t"><b>${esc(r.name)}</b><span class="art" style="color:var(--cyan);background:var(--infobg)">${esc(r.nomos||r.region)}</span></span>
+    <span class="ad">${esc([r.addr||'Δεν αναγράφεται οδός στην επίσημη πηγή',r.tk,r.city].filter(Boolean).join(' · '))}</span>
+    <span class="m"><i class="cat">${esc(r.cat||'Υπηρεσία')}</i>${r.region?`<i>${esc(r.region)}</i>`:''}<i>επίσημο ΕΛ.ΑΣ.</i></span></button>`;
+  return`<button type="button" class="sug-i" data-svc="${esc(r.name)}" data-scope="${scope}" style="display:block">
+    <span class="t"><b>${esc(r.name)}</b></span><span class="m"><i>${r.kind==='history'?'από το ιστορικό σου':'σύντομη μορφή'}</i></span></button>`;}
+function renderSvcSug(scope){
+  const inp=scope==='oos'?$('#fOosDest'):$('#fService');
+  const box=$(scope==='oos'?'#oosSug':'#svcSug'),list=$(scope==='oos'?'#oosSugL':'#svcSugL'),n=$(scope==='oos'?'#oosSugN':'#svcSugN');
+  if(!normText(inp.value)){box.hidden=true;return;}
+  const {rows,links}=searchServices(inp.value,8);
+  box.hidden=false;n.textContent=rows.length?rows.length:'';
+  list.innerHTML=(rows.length?rows.map(r=>svcRow(r,scope)).join(''):'<div class="sug-e">Καμία υπηρεσία στον κατάλογο. Γράψε ελεύθερα την ονομασία.</div>')
+    +links.map(l=>`<a class="sug-link" href="${esc(l.url)}" target="_blank" rel="noopener">↗ Επίσημες υπηρεσίες Νομού ${esc(l.nomos)}</a>`).join('');}
+function svcInfoHtml(hit){return`${esc([hit.addr||'Δεν αναγράφεται οδός στην επίσημη πηγή',hit.tk,hit.city].filter(Boolean).join(' · '))}${hit.url?` · <a href="${esc(hit.url)}" target="_blank" rel="noopener">επίσημη πηγή</a>`:''}`;}
+function applySvc(name,scope){
+  (scope==='oos'?$('#fOosDest'):$('#fService')).value=name;
+  $(scope==='oos'?'#oosSug':'#svcSug').hidden=true;
+  if(scope!=='oos'){const hit=serviceByFold(name),i=$('#svcInfo');
+    if(hit){i.innerHTML=svcInfoHtml(hit);i.hidden=false;}else i.hidden=true;}}
+$('#svcSugL').addEventListener('click',e=>{const b=e.target.closest('[data-svc]');if(b)applySvc(b.dataset.svc,'main');});
+$('#oosSugL').addEventListener('click',e=>{const b=e.target.closest('[data-svc]');if(b)applySvc(b.dataset.svc,'oos');});
+$('#svcSugX').onclick=()=>{$('#svcSug').hidden=true;};
+$('#oosSugX').onclick=()=>{$('#oosSug').hidden=true;};
+$('#fService').addEventListener('input',()=>{renderSvcSug('main');$('#svcInfo').hidden=true;});
+$('#fService').addEventListener('focus',()=>renderSvcSug('main'));
+$('#fOosDest').addEventListener('input',()=>renderSvcSug('oos'));
+$('#fOosDest').addEventListener('focus',()=>renderSvcSug('oos'));
+const DF={searchFound:'d_searchFound',searchNone:'d_searchNone',inv1Create:'d_inv1Create',inv1Send:'d_inv1Send',inv1Proof:'d_inv1Proof',inv1Res:'d_inv1Res',inv2Create:'d_inv2Create',inv2Send:'d_inv2Send',inv2Proof:'d_inv2Proof',inv2Res:'d_inv2Res',inv3Create:'d_inv3Create',inv3Send:'d_inv3Send',inv3Proof:'d_inv3Proof',inv3Res:'d_inv3Res',susp:'d_susp',return:'d_return',polRem:'d_polRem',returned:'d_returned',polRet:'d_polRet',docRecv:'d_docRecv',oos:'d_oos',oosDest:'d_oosDest',oosReason:'d_oosReason',complaint:'d_complaint',closed:'d_closed',closedKind:'d_closedKind'};
+const DL={searchFound:'Βρέθηκε τηλέφωνο',searchNone:'Δεν βρέθηκε τηλέφωνο',susp:'Αφαίρεση',polRem:'POL αφαίρεσης',returned:'Απόδοση',polRet:'POL απόδοσης',docRecv:'Παραλαβή εγγράφου',oos:'Εκτός αρμοδιότητας',oosDest:'Υπηρεσία προορισμού',oosReason:'Αιτιολογία',complaint:'Μήνυση',closed:'Κλείσιμο',closedKind:'Είδος κλεισίματος'};
+[1,2,3].forEach(n=>{DL['inv'+n+'Create']=n+'η δημιουργία';DL['inv'+n+'Send']=n+'η αποστολή';DL['inv'+n+'Proof']=n+'ο αποδεικτικό';DL['inv'+n+'Res']=n+'ο αποδεικτικό (αποτέλεσμα)';});
+F.querySelectorAll('.adv input[type=date]:not([readonly])').forEach(inp=>{
+  const w=document.createElement('span');w.className='dw';inp.parentNode.insertBefore(w,inp);w.append(inp);
+  const b=document.createElement('button');b.type='button';b.className='clr';b.textContent='Καθαρισμός';b.onclick=()=>{inp.value='';};w.append(b);});
+const CALLOPT=[['noanswer','Δεν απάντησε'],['informed','Δεν έκλεισε ραντεβού'],['booked','Έκλεισε ραντεβού']];
+const callRow=k=>`<div class="er"><input type="date" class="cd" value="${esc(k.d||'')}"><select class="cr">${CALLOPT.map(o=>`<option value="${o[0]}"${o[0]===k.r?' selected':''}>${o[1]}</option>`).join('')}</select><button type="button" class="x" aria-label="Διαγραφή">×</button></div>`;
+const apptRow=a=>`<div class="er" data-s="${esc(a.s||'')}"><label>Κλείστηκε<input type="date" class="ab" value="${esc(a.b||'')}"></label><label>Ραντεβού<input type="date" class="ad" value="${esc(a.d||'')}"></label><button type="button" class="x" aria-label="Διαγραφή">×</button></div>`;
+const readCalls=()=>[...F.querySelectorAll('#callRows .er')].map(r=>({d:r.querySelector('.cd').value,r:r.querySelector('.cr').value}));
+function readAppts(){
+  const a=[...F.querySelectorAll('#apptRows .er')].map(r=>({b:r.querySelector('.ab').value,d:r.querySelector('.ad').value,s:r.dataset.s||'citizen',res:''})).filter(x=>x.d);
+  a.sort((x,y)=>(x.b||x.d).localeCompare(y.b||y.d)||x.d.localeCompare(y.d));
+  a.forEach((x,i)=>{const nx=a[i+1];if(nx)x.res=(nx.b?x.d<nx.b:x.d<todayStr())?'missed':'';});
+  a.forEach((x,i)=>{if(x.s!=='call')x.s=i>0&&a[i-1].res!=='missed'?'change':'citizen';});
+  return a;}
+F.addEventListener('click',e=>{const x=e.target.closest('.er .x');if(x)x.closest('.er').remove();});
+$('#addCall').onclick=()=>$('#callRows').insertAdjacentHTML('beforeend',callRow({d:todayStr(),r:'noanswer'}));
+$('#addAppt').onclick=()=>$('#apptRows').insertAdjacentHTML('beforeend',apptRow({b:todayStr(),d:'',s:'citizen'}));
+function fillProto(yr,cur){const o=PROTO_PREFIXES(yr);if(cur&&!o.includes(cur))o.push(cur);
+  E.protocolPrefix.innerHTML='<option value="">— φάκελος —</option>'+o.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');E.protocolPrefix.value=cur||'';}
+const buildProtocol=()=>{const n=String(E.protocolNum.value||'').replace(/\s/g,'').toUpperCase();return n?(E.protocolPrefix.value||'')+n:'';};
+E.protocolNum.addEventListener('input',()=>{if(E.protocolPrefix.value)return;const p=autoPrefix(E.protocolNum.value,yy2(E.receivedDate.value));if(p)fillProto(yy2(E.receivedDate.value),p);});
+E.service.addEventListener('change',()=>{E.service.value=normText(E.service.value);});
+E.d_oosDest.addEventListener('change',()=>{E.d_oosDest.value=normText(E.d_oosDest.value);});
+$('#fViol').onchange=()=>{toggles();const t=E.violationType.value,m=FREQ_MAP[t];
+  if(m&&m.article&&(!E.vArticle.value.trim()||VIOL.some(v=>FREQ_MAP[v].article&&FREQ_MAP[v].article===E.vArticle.value.trim())))E.vArticle.value=m.article;
+  if(t==='custom'){$('#violPicked').hidden=true;violCat='';setTimeout(()=>$('#fViolOther').focus(),60);}};
+$('#fFolder').onchange=toggles;
+function openForm(id,adv){
+  const c=id?get(id):null;
+  F.reset();F.dataset.id=id||'';
+  const sm=$('#scanMsg');sm.hidden=true;sm.textContent='';
+  ['#violSug','#svcSug','#oosSug','#violPicked','#svcInfo'].forEach(s=>$(s).hidden=true);violCat='';
+  $('#formTitle').textContent=c?'Επεξεργασία υπόθεσης':'Νέα υπόθεση';
+  $('#pasteBlock').hidden=!!c;$('#btnFormDelete').hidden=!c;
+  E.manualState.innerHTML='<option value="auto">Αυτόματο — υπολογισμός από τα δεδομένα</option>'+Object.keys(ST).map(k=>`<option value="${k}">${ST[k].l}</option>`).join('');
+  folderOpts(c?c.folder:'');
+  $('#callRows').innerHTML=(c?c.calls||[]:[]).map(callRow).join('');
+  $('#apptRows').innerHTML=(c?c.appts||[]:[]).map(apptRow).join('');
+  F.querySelectorAll('details.adv,details.sub').forEach(d=>d.open=false);
+  if(adv)F.querySelectorAll('details.adv').forEach(d=>d.open=true);
+  if(c){
+    E.plate.value=c.plate;E.name.value=c.name;E.service.value=c.service||'';E.phone.value=c.phone||'';
+    E.receivedDate.value=c.receivedDate;
+    if(VIOL.includes(c.violationType))E.violationType.value=c.violationType;
+    else if(c.violationType){E.violationType.value='custom';E.violationOther.value=c.violationType;}
+    E.docType.value=c.docType||'Κλήση';E.fine.value=c.fine||'';
+    E.removalDays.value=c.removalDays||'';E.removalWhat.value=c.removalWhat||'license';E.notes.value=c.notes||'';
+    const sp=splitProtocol(c.protocol);fillProto(yy2(c.receivedDate),sp.prefix);E.protocolNum.value=sp.num;E.address.value=c.address||'';
+    E.manualState.value=c.statePin?c.statePin.s:'auto';
+    E.vDate.value=c.vDate||'';E.vPlace.value=c.vPlace||'';E.vArticle.value=c.vArticle||'';E.endRoute.value=c.endRoute||'';
+    Object.entries(DF).forEach(([k,n])=>{E[n].value=c.dates[k]||'';});
+    if(c.folder&&$('#fFolder').value===''){$('#fFolder').value='custom';E.folderCustom.value=c.folder;}
+    checkPlate(c.plate);
+    const hit=serviceByFold(c.service);
+    if(hit){$('#svcInfo').innerHTML=svcInfoHtml(hit);$('#svcInfo').hidden=false;}
+  }else{
+    E.receivedDate.value=todayStr();E.docType.value='Κλήση';E.removalWhat.value='license';
+    fillProto(yy2(todayStr()),'');E.protocolNum.value='';E.address.value='';
+    $('#plateWarning').hidden=true;E.manualState.value='auto';}
+  toggles();dlgF.showModal();}
+const showV=v=>!v?'—':/^\d{4}-\d{2}-\d{2}$/.test(v)?sd(v):v==='ok'?'βρέθηκε':v==='bad'?'δεν βρέθηκε':v==='transmittal'?'Διαβιβαστικό':v==='complaint'?'Μήνυση':v;
+F.addEventListener('submit',e=>{
+  e.preventDefault();
+  const id=F.dataset.id||uid(),old=get(id);
+  const folder=E.folderSelect.value==='custom'?E.folderCustom.value.trim().toUpperCase():E.folderSelect.value;
+  const days=Number(E.removalDays.value)||0,what=E.removalWhat.value||'license';
+  const D={...BLANK_DATES,...(old?old.dates:{})};
+  Object.entries(DF).forEach(([k,n])=>{D[k]=E[n].value;});
+  const calls=readCalls(),appts=readAppts(),Lc=lastBy(calls);
+  D.phone=Lc?Lc.d:'';D.callRes=Lc?Lc.r:'';D.appt=appts.length?appts[appts.length-1].d:'';D.oosDest=normText(D.oosDest);
+  if(D.susp&&!days){alert('Για ημερομηνία αφαίρεσης συμπλήρωσε τις ημέρες αφαίρεσης.');return;}
+  if(D.returned&&!D.susp){alert('Η απόδοση προϋποθέτει ημερομηνία αφαίρεσης.');return;}
+  if(D.polRem&&!D.susp){alert('Το POL αφαίρεσης προϋποθέτει ημερομηνία αφαίρεσης.');return;}
+  if(D.polRet&&!D.returned){alert('Το POL απόδοσης προϋποθέτει ημερομηνία απόδοσης.');return;}
+  if(D.oos&&!String(D.oosDest||'').trim()){alert('Συμπλήρωσε την υπηρεσία προορισμού για το «Εκτός αρμοδιότητας».');return;}
+  D.closedKind=D.closed?(D.closedKind||'transmittal'):'';
+  if(D.susp&&days)D.return=addDays(D.susp,days);
+  const rec={id,plate:normPlate(E.plate.value),name:E.name.value.trim().toUpperCase(),service:normText(E.service.value),
+    phone:E.phone.value.trim(),receivedDate:E.receivedDate.value,folder,
+    violationType:E.violationType.value==='custom'?E.violationOther.value.trim().toUpperCase():E.violationType.value,
+    docType:E.docType.value||'Κλήση',fine:E.fine.value.trim(),requiresLicense:days>0,removalDays:days,removalWhat:what,
+    protocol:buildProtocol(),address:E.address.value.trim(),notes:E.notes.value.trim().toUpperCase(),
+    vDate:E.vDate.value,vPlace:E.vPlace.value.trim(),vArticle:baseArticle(E.vArticle.value),endRoute:E.endRoute.value,
+    state:old?old.state:'search',statePin:old?(old.statePin||null):null,history:old?(old.history||[]):[],
+    calls,appts,undo:old?(old.undo||[]):[],dates:D,flags:[],moveTo:old?(old.moveTo||''):'',demo:old?old.demo:false,schema:8};
+  const ms=E.manualState.value;
+  if(ms&&ms!=='auto'&&ST[ms]){const nat=naturalState(rec);rec.statePin=(ms===nat)?null:{s:ms,base:nat};}else rec.statePin=null;
+  if(old){
+    const lines=[];
+    Object.keys(DF).forEach(k=>{if(k==='return')return;const a=old.dates[k]||'',b=D[k]||'';if(a!==b)lines.push(DL[k]+': '+showV(a)+' → '+showV(b));});
+    if(JSON.stringify(old.calls||[])!==JSON.stringify(calls))lines.push('Κλήσεις: '+(old.calls||[]).length+' → '+calls.length);
+    const strip=a=>JSON.stringify((a||[]).map(x=>[x.b,x.d]));
+    if(strip(old.appts)!==strip(appts))lines.push('Ραντεβού: '+(old.appts||[]).length+' → '+appts.length);
+    if((old.removalDays||0)!==days)lines.push('Ημέρες αφαίρεσης: '+(old.removalDays||'—')+' → '+(days||'—'));
+    if(days&&(old.removalWhat||'license')!==what)lines.push('Προς αφαίρεση: '+cap1(REMS[old.removalWhat||'license'])+' → '+cap1(REMS[what]));
+    if(lines.length&&!confirm('Θα αλλάξουν:\n'+lines.join('\n')+'\n\nΣυνέχεια;'))return;
+    rec.undo.push({l:'Διόρθωση στοιχείων',t:Date.now(),snap:clone(old)});if(rec.undo.length>8)rec.undo.shift();
+    cases[cases.indexOf(old)]=rec;
+  }else cases.unshift(rec);
+  reconcile(rec);if(rec.moveTo&&rec.moveTo===rec.folder)rec.moveTo='';
+  save();render();dlgF.close();toast(old?'Αποθηκεύτηκε η διόρθωση':'Νέα υπόθεση: '+rec.plate,'ok');});
+$('#btnFormCancel').onclick=()=>dlgF.close();
+$('#btnFormDelete').onclick=()=>{const c=get(F.dataset.id);if(!c)return;
+  if(!confirm('Οριστική διαγραφή της υπόθεσης '+c.plate+';'))return;
+  bulkSnap=clone(cases);cases=cases.filter(x=>x.id!==c.id);save();render();dlgF.close();bulkUndoBar('Διαγραφή '+c.plate);};
+
+/* ---------- paste ---------- */
+const SCAN_LBL={plate:'Πινακίδα',name:'Ονοματεπώνυμο',service:'Υπηρεσία ανάθεσης',address:'Διεύθυνση',violationType:'Παράβαση',docType:'Τι αφορά',fine:'Πρόστιμο',removalDays:'Ημέρες αφαίρεσης',removalWhat:'Προς αφαίρεση',vDate:'Ημερομηνία παράβασης',vPlace:'Τόπος',vArticle:'Άρθρο',endRoute:'Τέλος διαδικασίας'};
+const ROUTE_L={'':'κατά τον κανόνα',complaint:'μήνυση',transmittal:'διαβιβαστικό'};
+const scanShow=(k,v)=>!v?'—':k==='removalWhat'?cap1(REMS[v]||v):k==='endRoute'?ROUTE_L[v]:k==='vDate'?sd(v):String(v);
+const scanCur=k=>{
+  if(k==='violationType')return E.violationType.value==='custom'?E.violationOther.value.trim().toUpperCase():E.violationType.value;
+  if(k==='removalWhat')return E.removalDays.value?E.removalWhat.value:'';
+  if(k==='plate')return normPlate(E.plate.value);
+  if(k==='name')return E.name.value.trim().toUpperCase();
+  return String(E[k].value||'').trim();};
+function applyScanFromPaste(text){
+  const sm=$('#scanMsg'),res=OcrParser.parseDocument(text),o=OcrParser.toForm(res);
+  const keys=Object.keys(SCAN_LBL).filter(k=>o[k]!==undefined&&o[k]!=='');
+  const lines=keys.filter(k=>scanCur(k)&&scanCur(k)!==String(o[k])).map(k=>SCAN_LBL[k]+': '+scanShow(k,scanCur(k))+' → '+scanShow(k,o[k]));
+  if(lines.length&&!confirm('Θα αλλάξουν:\n'+lines.join('\n')+'\n\nΣυνέχεια;')){sm.hidden=true;return;}
+  keys.forEach(k=>{const v=o[k];
+    if(k==='plate'){E.plate.value=normPlate(v);checkPlate(E.plate.value);}
+    else if(k==='service')E.service.value=normText(v);
+    else if(k==='violationType'){
+      if(VIOL.includes(v)){E.violationType.value=v;toggles();const m=FREQ_MAP[v];if(m&&m.article&&!E.vArticle.value.trim())E.vArticle.value=m.article;}
+      else{E.violationType.value='custom';E.violationOther.value=v;toggles();}}
+    else E[k].value=v;});
+  const cur=E.notes.value.split('\n').map(x=>x.trim()).filter(Boolean),have=cur.map(x=>x.toUpperCase());
+  const add=(o.notes||[]).filter(x=>!have.includes(x.toUpperCase()));
+  if(add.length)E.notes.value=cur.concat(add).join('\n');
+  const msg=[keys.length?'Συμπληρώθηκαν: '+keys.map(k=>SCAN_LBL[k]).concat(add.length?['Σημειώσεις']:[]).join(', ')+'.':'Δεν αναγνωρίστηκε τίποτα. Έλεγξε ότι επικόλλησες το κείμενο του εγγράφου.'];
+  (res.warnings||[]).forEach(w=>msg.push('Έλεγξε: '+w));
+  (o.info||[]).forEach(i=>msg.push('ℹ '+i));
+  msg.push('Ο αριθμός πρωτοκόλλου ΔΕΝ συμπληρώνεται αυτόματα — καταχώρησέ τον χειροκίνητα.');
+  const left=[['τηλέφωνο',E.phone.value],['πρωτόκολλο',E.protocolNum.value],['φάκελος',E.folderSelect.value]].filter(x=>!String(x[1]||'').trim()).map(x=>x[0]);
+  if(left.length)msg.push('Μένουν: '+left.join(', ')+'.');
+  sm.textContent=msg.join('\n');sm.hidden=false;}
+$('#btnPaste').onclick=()=>wiz('Συμπλήρωση από έγγραφο','Επικόλλησε το κείμενο από το MakeACopy.',
+ '<textarea id="wTx" rows="9" style="width:100%;box-sizing:border-box" placeholder="Επικόλληση κειμένου"></textarea>',
+ [{t:'Συμπλήρωση',c:'pri',v:()=>{const ok=$('#wTx').value.trim().length>30;if(!ok)alert('Επικόλλησε πρώτα το κείμενο του εγγράφου.');return ok;},f:()=>applyScanFromPaste($('#wTx').value)}]);
+$('#btnGenInv').onclick=()=>{
+  const draft={plate:normPlate(E.plate.value),name:E.name.value.trim().toUpperCase(),protocol:buildProtocol(),address:E.address.value.trim(),service:normText(E.service.value),vDate:E.vDate.value,vPlace:E.vPlace.value.trim(),vArticle:baseArticle(E.vArticle.value)};
+  const miss=inviteMissing(draft);
+  if(miss.length){wiz('Ελλιπής πρόσκληση','Λείπουν υποχρεωτικά στοιχεία:',
+    '<ul class="misslist">'+miss.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>',
+    String(draft.protocol||'').trim()?[{t:'Συνέχεια παρ\' όλα αυτά',c:'bad',f:()=>pickInv(draft)},{t:'Συμπλήρωση πρώτα',c:'pri'}]:[{t:'Κλείσιμο',c:'pri'}]);return;}
+  pickInv(draft);};
+function pickInv(draft){wiz('Δημιουργία πρόσκλησης','Ποια πρόσκληση;','',[1,2,3].map(n=>({t:n+'η πρόσκληση',c:n===1?'pri':'',f:()=>sendInvitation(draft,n,todayStr())})));}
+
+/* ---------- προβολές / μαζικές ---------- */
+$('#btnSaveView').onclick=()=>{const name=prompt('Όνομα προβολής:','Η προβολή μου');if(!name||!name.trim())return;
+  savedViews.push({name:name.trim().slice(0,28),stateF,folderF,invF,sortF,q});activeView=savedViews.length-1;saveViews();renderCases();toast('Η προβολή αποθηκεύτηκε','ok');};
+$('#viewsRow').addEventListener('click',e=>{
+  const ap=e.target.closest('[data-vapply]');
+  if(ap){const v=savedViews[+ap.dataset.vapply];if(!v)return;stateF=v.stateF;folderF=v.folderF;invF=v.invF;sortF=v.sortF;q=v.q||'';$('#searchInput').value=q;activeView=+ap.dataset.vapply;render();toast('Προβολή: '+v.name,'ok');return;}
+  const del=e.target.closest('[data-vdel]');
+  if(del){const i=+del.dataset.vdel,nm=savedViews[i].name;savedViews.splice(i,1);activeView=-1;saveViews();renderCases();toast('Διαγράφηκε: '+nm,'ok');return;}
+  const mv=e.target.closest('[data-vmv]');
+  if(mv){const[i,d]=mv.dataset.vmv.split('|').map(Number),j=i+d;if(j<0||j>=savedViews.length)return;
+    const t=savedViews[i];savedViews[i]=savedViews[j];savedViews[j]=t;
+    if(activeView===i)activeView=j;else if(activeView===j)activeView=i;saveViews();renderCases();}});
+let dragI=null;
+$('#viewsRow').addEventListener('dragstart',e=>{const c=e.target.closest('[data-vi]');if(!c)return;dragI=+c.dataset.vi;c.classList.add('drag');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',String(dragI));}catch(x){}});
+$('#viewsRow').addEventListener('dragover',e=>{const c=e.target.closest('[data-vi]');if(!c||dragI===null)return;e.preventDefault();
+  $('#viewsRow').querySelectorAll('.vchip').forEach(x=>x.classList.remove('over'));c.classList.add('over');});
+$('#viewsRow').addEventListener('drop',e=>{const c=e.target.closest('[data-vi]');if(!c||dragI===null)return;e.preventDefault();
+  const j=+c.dataset.vi;if(j!==dragI){const t=savedViews[dragI];savedViews.splice(dragI,1);savedViews.splice(j,0,t);activeView=j;saveViews();}
+  dragI=null;renderCases();});
+$('#viewsRow').addEventListener('dragend',()=>{dragI=null;$('#viewsRow').querySelectorAll('.vchip').forEach(x=>x.classList.remove('drag','over'));});
+$('#btnSelMode').onclick=()=>{selMode=!selMode;sel.clear();render();};
+$('#bulkDone').onclick=()=>{selMode=false;sel.clear();render();};
+$('#bulkAll').onclick=()=>{const l=filteredCases();if(sel.size===l.length)sel.clear();else l.forEach(c=>sel.add(c.id));renderCases();};
+$('#bulkMove').onclick=()=>{if(!sel.size)return;
+  openPick('Μετακίνηση '+sel.size+' υποθέσεων',allFolders().map(f=>({v:f,l:f})),'',dest=>{
+    if(!dest||!confirm('Μετακίνηση '+sel.size+' υποθέσεων στον φάκελο «'+dest+'»;'))return;
+    bulkSnap=clone(cases);let n=0;
+    cases.forEach(c=>{if(sel.has(c.id)){c.folder=dest;c.moveTo='';n++;}});
+    save();sel.clear();selMode=false;render();bulkUndoBar('Μετακίνηση '+n+' υποθέσεων');toast(n+' υποθέσεις μετακινήθηκαν','ok');});};
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  if(e.target.closest('dialog')||e.target.closest('.bulkbar'))return;
+  if(selMode&&view==='cases'){const row=e.target.closest('[data-open]');
+    if(row){const id=row.dataset.open;if(sel.has(id))sel.delete(id);else sel.add(id);renderCases();return;}}
+  const t=e.target.closest('[data-nav],[data-open],[data-a],[data-b],[data-r],[data-e],[data-p],[data-mv],[data-u],[data-grp],[data-filter],[data-mvall]');
+  if(!t||e.target.closest('.rc-call'))return;
+  const d=t.dataset;
+  if(d.nav){openId=null;view=d.nav;render();scrollTo(0,0);return;}
+  if(d.grp){waitOpen=!waitOpen;render();return;}
+  if(d.filter){renderCases();const{sc,fm,ic}=renderCases.opts;
+    if(d.filter==='state')openPick('Φάση',[{v:'all',l:'Όλες',n:cases.length}].concat(Object.keys(ST).filter(k=>sc[k]).map(k=>({v:k,l:ST[k].l,n:sc[k]}))),stateF,v=>{stateF=v;activeView=-1;render();});
+    else if(d.filter==='folder')openPick('Φάκελος',[{v:'all',l:'Όλοι',n:cases.length}].concat(Object.keys(fm).sort().map(f=>({v:f,l:f,n:fm[f]}))),folderF,v=>{folderF=v;activeView=-1;render();});
+    else if(d.filter==='inv')openPick('Αριθμός προσκλήσεων',[{v:'all',l:'Όλες'},{v:'0',l:'Καμία',n:ic[0]},{v:'1',l:'1 πρόσκληση',n:ic[1]},{v:'2',l:'2 προσκλήσεις',n:ic[2]},{v:'3',l:'3 προσκλήσεις',n:ic[3]}],invF,v=>{invF=v;activeView=-1;render();});
+    else openPick('Ταξινόμηση',[{v:'flow',l:'Ροή «Σήμερα»'},{v:'due',l:'Προθεσμία'},{v:'recv',l:'Ημ. παραλαβής'},{v:'plate',l:'Πινακίδα'}],sortF,v=>{sortF=v;activeView=-1;render();});
+    return;}
+  if(d.open){setView('case',d.open);return;}
+  if(d.p){q=d.p;$('#searchInput').value=q;stateF='all';folderF='all';invF='all';activeView=-1;view='cases';render();scrollTo(0,0);return;}
+  if(d.mvall){const list=cases.filter(x=>x.moveTo===d.mvall);
+    if(list.length&&confirm('Μετακινήθηκαν '+list.length+' φάκελοι στο «'+d.mvall+'»;')){
+      bulkSnap=clone(cases);list.forEach(x=>{x.folder=x.moveTo;x.moveTo='';});save();render();bulkUndoBar('Μετακίνηση '+list.length+' φακέλων');}
+    return;}
+  const id=d.a||d.r||d.e||d.mv||d.u||(d.b||'').split('|')[0],c=get(id);if(!c)return;
+  if(d.a){const a=actFor(c);if(a)a[1](c);}
+  else if(d.b){const x=secondary(c)[Number(d.b.split('|')[1])];if(x)x[1](c);}
+  else if(d.r)actAppt(c);
+  else if(d.e)openForm(c.id,true);
+  else if(d.u)undoLast(c);
+  else if(d.mv&&c.moveTo){c.folder=c.moveTo;c.moveTo='';save();render();}});
+$('#btnBack').onclick=()=>history.back();
+window.addEventListener('popstate',()=>{if(view==='case'){view=prevView;openId=null;render();}});
+$('#searchInput').oninput=e=>{q=e.target.value;activeView=-1;if(view!=='cases')view='cases';render();};
+$('#btnClearF').onclick=()=>{stateF='all';folderF='all';invF='all';q='';activeView=-1;$('#searchInput').value='';render();};
+$('#btnNew').onclick=()=>openForm(null);
+$('#btnBwClose').onclick=()=>{$('#backupWarning').hidden=true;};
+$('#btnDataRetry').onclick=()=>location.reload();
+$('#btnDemoClear').onclick=()=>{const n=cases.filter(c=>c.demo).length;if(!n)return;
+  if(!confirm('Διαγραφή '+n+' υποθέσεων επίδειξης; Οι πραγματικές δεν επηρεάζονται.'))return;
+  bulkSnap=clone(cases);cases=cases.filter(c=>!c.demo);save();render();bulkUndoBar('Διαγραφή '+n+' δειγμάτων');toast('Τα δείγματα διαγράφηκαν','ok');};
+$('#btnExport').onclick=()=>{const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(cases,null,2)],{type:'application/json'}));
+  a.download='ypotheseis_'+todayStr()+'.json';a.click();localStorage.setItem(LSK_BAK,Date.now());checkBackup();toast('Backup κατέβηκε','ok');};
+$('#btnImport').onclick=()=>$('#importFile').click();
+$('#importFile').onchange=e=>{
+  const input=e.target,file=input.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onerror=()=>{alert('Δεν μπόρεσα να διαβάσω το αρχείο.');input.value='';};
+  r.onload=ev=>{const prev=localStorage.getItem(KEY);
+    try{
+      const text=String(ev.target.result||'').replace(/^\uFEFF/,'');
+      if(text.includes('"manifest_version"')||text.includes('"start_url"'))throw new Error('Επιλέξατε το manifest.json. Επιλέξτε αρχείο Backup.');
+      const parsed=JSON.parse(text);
+      let arr=Array.isArray(parsed)?parsed:null;
+      if(!arr&&parsed&&typeof parsed==='object')arr=Object.values(parsed).find(Array.isArray)||null;
+      if(!arr)throw new Error('Το αρχείο δεν περιέχει λίστα υποθέσεων.');
+      arr=arr.filter(x=>x&&typeof x==='object');
+      if(!arr.length)throw new Error('Το αρχείο δεν περιέχει υποθέσεις.');
+      const hd=cases.some(c=>c.demo);
+      if(!confirm('Βρέθηκαν '+arr.length+' υποθέσεις. Η επαναφορά αντικαθιστά τις τρέχουσες.'+(hd?' Τα δείγματα θα αφαιρεθούν.':'')+'\n\nΣυνέχεια;')){input.value='';return;}
+      if(prev)localStorage.setItem('troxonomika_v2_before_restore',prev);
+      cases=arr.map(migrate);
+      if(hd)cases=cases.filter(c=>!c.demo||arr.some(x=>x.id===c.id&&x.demo));
+      tick();save();render();alert('Επιτυχής επαναφορά: '+cases.length+' υποθέσεις.');
+    }catch(err){console.error(err);
+      if(prev)localStorage.setItem(KEY,prev);else localStorage.removeItem(KEY);
+      try{cases=prev?JSON.parse(prev).map(migrate):[];render();}catch(e2){}
+      alert('Σφάλμα: '+err.message+(prev?'\nΤα προηγούμενα δεδομένα διατηρήθηκαν.':''));}
+    input.value='';};
+  r.readAsText(file);};
+$('#btnPrint').onclick=()=>{
+  let h=`<h1>ΚΑΤΑΣΤΑΣΗ ΥΠΟΘΕΣΕΩΝ</h1><div style="font-size:9px;margin-bottom:6px">Ημερομηνία: ${fmt(todayStr())} | Σύνολο: ${cases.length}</div>`+
+    '<table><thead><tr><th>Α/Α</th><th>Πινακίδα</th><th>Ονοματεπώνυμο</th><th>Τηλέφωνο</th><th>Άρθρο</th><th>Κατάσταση</th><th>Ραντεβού</th><th>Απόδοση</th><th>Προσκλ.</th><th>Φάκελος</th></tr></thead><tbody>';
+  sortCases(cases).forEach((c,i)=>{h+=`<tr><td>${i+1}</td><td><b>${esc(c.plate)}</b></td><td>${esc(c.name)}</td><td>${esc(c.phone||'—')}</td><td>${esc(c.vArticle||'—')}</td><td>${(ST[c.state]||{}).l||'—'}</td><td>${fmt(c.dates.appt)}</td><td>${fmt(c.dates.return)}</td><td>${invDone(c)}/3</td><td>${esc(c.folder||'—')}</td></tr>`;});
+  $('#printArea').innerHTML=h+'</tbody></table>';print();};
+
+/* ---------- δείγματα ---------- */
+function seedDemo(){const t=todayStr(),mk=o=>migrate({id:uid(),demo:true,schema:8,...o});
+  return[
+    mk({plate:'ΙΚΑ2846',name:'ΠΑΠΑΔΟΠΟΥΛΟΣ ΓΕΩΡΓΙΟΣ ΤΟΥ ΝΙΚΟΛΑΟΥ',service:'ΤΤ ΘΕΡΜΗΣ',phone:'6971234567',receivedDate:plus(t,-2),docType:'Κλήση',violationType:'Υπερβολική ταχύτητα',vArticle:'24',fine:'350',removalDays:30,removalWhat:'license',folder:'Τηλέφωνα - Χωρίς ραντεβού',address:'Φιλαδελφείας 22',protocol:'2515/11-'+yy2(t)+'/451',vDate:plus(t,-9),vPlace:'39+370 χ/θ της Π.Ε.Ο. Λάρισας - Βόλου'}),
+    mk({plate:'ΜΝΗ7315',name:'ΙΩΑΝΝΟΥ ΜΑΡΙΑ ΤΟΥ ΧΡΗΣΤΟΥ',service:'ΤΤ ΛΗΤΗΣ',phone:'6945551234',receivedDate:plus(t,-6),docType:'Κλήση',violationType:'ΜΗ ΧΡΗΣΗ ΚΡΑΝΟΥΣ (ΟΔΗΓΟΣ)',vArticle:'16',fine:'350',removalDays:30,removalWhat:'license',folder:'Τηλέφωνα - Με ραντεβού',calls:[{d:plus(t,-4),r:'booked'}],appts:[{b:plus(t,-4),d:t,s:'call',res:''}],dates:{phone:plus(t,-4),callRes:'booked',appt:t}}),
+    mk({plate:'ΑΒΖ9042',name:'ΝΙΚΟΛΑΟΥ ΔΗΜΗΤΡΙΟΣ',service:'Τμήμα Τροχαίας Βέροιας',phone:'6932224466',receivedDate:plus(t,-11),docType:'Κλήση',removalDays:0,removalWhat:'license',folder:'Τηλέφωνα - Χωρίς ραντεβού'}),
+    mk({plate:'ΕΚΤ1568',name:'ΒΑΣΙΛΕΙΟΥ ΕΛΕΝΗ ΤΟΥ ΑΠΟΣΤΟΛΟΥ',service:'ΑΤ ΧΑΛΚΗΔΟΝΑΣ',phone:'6988887777',receivedDate:plus(t,-60),docType:'Κλήση',removalDays:30,removalWhat:'license',folder:'Εκκρεμότητες - Καταχώρηση POL',dates:{susp:plus(t,-40),polRem:plus(t,-39),return:plus(t,-10),phone:plus(t,-55),callRes:'booked'},calls:[{d:plus(t,-55),r:'booked'}]}),
+    mk({plate:'ΡΥΧ6273',name:'ΑΘΑΝΑΣΙΟΥ ΧΡΗΣΤΟΣ ΤΟΥ ΠΕΤΡΟΥ',service:'ΤΤ ΛΑΡΙΣΑΣ',phone:'',receivedDate:plus(t,-24),docType:'Κλήση',violationType:'ΚΙΝΗΣΗ ΣΤΗ ΛΕΑ',vArticle:'33',fine:'150',removalDays:40,removalWhat:'license',folder:'Προσκλήσεις - 1η πρόσκληση',address:'Παπανικολή 8',protocol:'2515/11-'+yy2(t)+'/318',vDate:plus(t,-30),vPlace:'12+500 χ/θ της Ν.Ε.Ο. Αθηνών - Λαμίας',dates:{searchNone:plus(t,-22),inv1Create:plus(t,-20),inv1Send:plus(t,-20),inv1Proof:plus(t,-16),inv1Res:'ok'}}),
+    mk({plate:'ΟΖΗ3951',name:'ΓΕΩΡΓΙΟΥ ΑΙΚΑΤΕΡΙΝΗ',service:'ΤΤ ΚΑΛΑΜΑΡΙΑΣ',phone:'6909090909',receivedDate:plus(t,-30),docType:'Απόφαση',removalDays:0,removalWhat:'license',folder:'Αναμονή αποδεικτικού',dates:{phone:plus(t,-28),callRes:'noanswer',inv1Create:plus(t,-26),inv1Send:plus(t,-26),inv1Proof:plus(t,-20),inv1Res:'ok',inv2Create:plus(t,-8),inv2Send:plus(t,-8)},calls:[{d:plus(t,-28),r:'noanswer'}]}),
+    mk({plate:'ΤΑΜ8406',name:'ΣΤΑΥΡΟΥ ΝΙΚΟΛΑΟΣ ΤΟΥ ΘΩΜΑ',service:'ΤΤ ΘΕΣΣΑΛΟΝΙΚΗΣ',phone:'6977776666',receivedDate:plus(t,-90),docType:'Κλήση',removalDays:30,removalWhat:'license',folder:'',dates:{susp:plus(t,-70),polRem:plus(t,-69),return:plus(t,-40),returned:plus(t,-40),polRet:plus(t,-39),phone:plus(t,-85),callRes:'booked'},calls:[{d:plus(t,-85),r:'booked'}]})];}
+
+/* ---------- αυτοέλεγχος (σιωπηλός) ---------- */
+function runDiagnostics(){
+  const R=[],ok=(n,c,d)=>R.push({name:n,pass:!!c,detail:d||''}),eq=(n,a,b)=>ok(n,a===b,'αναμενόταν '+JSON.stringify(b)+', βρέθηκε '+JSON.stringify(a));
+  ok('data.js φορτώθηκε',CATALOG.length>0,CATALOG.length+' εγγραφές');
+  ok('services.js φορτώθηκε',SERVICES.length>0,SERVICES.length+' υπηρεσίες');
+  ok('Ευρετήριο νομών',SVC_INDEX.length>=50,SVC_INDEX.length+'');
+  eq('Πάσχα 2026',iso(easter(2026)),'2026-04-12');
+  ok('Αγ. Πνεύματος 2026',isHoliday('2026-06-01'));
+  ok('Κυριακή αργία',isNonWorking('2026-11-29'));
+  eq('Παρασκευή +1 → Δευτέρα',addDays('2026-11-27',1),'2026-11-30');
+  eq('10ήμερο',addDays('2026-11-16',10),'2026-11-26');
+  eq('Άρθρο 24§9αγ → 24',baseArticle('24§9αγ'),'24');
+  eq('Άρθρο 90§3-4 (Ε3-Β) → 90',baseArticle('90§3-4 (Ε3-Β)'),'90');
+  eq('ν.3446 → κενό',baseArticle('ν.3446/2006 §1.2α'),'');
+  eq('ΠΔ 237/86 → κενό',baseArticle('ΠΔ 237/86'),'');
+  eq('Συχνές: ταχύτητα',FREQ_MAP['Υπερβολική ταχύτητα'].article,'24');
+  eq('Συχνές: ΚΤΕΟ',FREQ_MAP['ΚΤΕΟ'].article,'90');
+  ok('Μενού χωρίς πεδία άρθρων',document.querySelectorAll('#freqList input').length===0);
+  ok('Dropdown μόνο συχνές',document.querySelectorAll('#fViol option').length===VIOL.length+2);
+  if(CATALOG.length){
+    eq('κράνος οδηγός → 79',(searchCatalog('κρανος οδηγος','',1)[0]||{}).id,79);
+    eq('ράμπα ΑμεΑ → 2',(searchCatalog('ραμπα αμεα','',1)[0]||{}).id,2);
+    eq('ΛΕΑ → 58',(searchCatalog('λεα','',1)[0]||{}).id,58);
+    eq('βυτιοφόρο συνοδευτικά → 209',(searchCatalog('βυτιοφορο καυσυμα χωρις συνοδευτικα','',1)[0]||{}).id,209);
+    ok('υποτροπή μόνο όταν ζητηθεί',(searchCatalog('λεα 3η υποτροπη','',1)[0]||{}).cat==='υποτροπή');
+  }
+  const base=o=>migrate({id:uid(),plate:'ΑΒΕ1234',name:'ΔΟΚΙΜΗ',receivedDate:'2026-11-01',docType:'Κλήση',removalDays:0,...o});
+  eq('Φάση search',base({}).state,'search');
+  eq('Φάση to_call',base({phone:'6971234567'}).state,'to_call');
+  eq('Φάση appointment',base({phone:'6971234567',appts:[{b:todayStr(),d:todayStr(),s:'call',res:''}],dates:{appt:todayStr()}}).state,'appointment');
+  eq('Φάση pol_rem',base({removalDays:30,dates:{susp:plus(todayStr(),-2)}}).state,'pol_rem');
+  eq('Φάση to_return',base({removalDays:10,dates:{susp:plus(todayStr(),-20),polRem:plus(todayStr(),-19)}}).state,'to_return');
+  eq('Φάση closed',base({dates:{closed:todayStr()}}).state,'closed');
+  eq('Ιεραρχία: έναρξη πάνω από διαβιβαστικό?',GRP.findIndex(x=>x[0]==='start')<GRP.findIndex(x=>x[0]==='close'),true);
+  eq('Ιεραρχία: ραντεβού πρώτο',GRP[0][0],'appt');
+  eq('Ιεραρχία: έναρξη δεύτερο',GRP[1][0],'start');
+  const A=s=>OcrParser.toForm(OcrParser.parseDocument(s)).vArticle||'';
+  eq('Parser άρθρο «άρθρο 24»',A('κατά παράβαση του άρθρο 24 του ΚΟΚ'),'24');
+  eq('Parser άρθρο «άρθρ. 38»',A('κατά παράβαση του άρθρ. 38 του ΚΟΚ'),'38');
+  eq('Parser άρθρο «2459αγ»',A('κατά παράβαση 2459αγ του ΚΟΚ'),'24');
+  const P=s=>OcrParser.toForm(OcrParser.parseDocument(s)).vPlace||'';
+  ok('Τόπος: ολόκληρη οδός',P('στην 39+370 χ/θ της Παλαιάς Εθνικής Οδού Θεσσαλονίκης - Καβάλας διαπιστώθηκε').includes('Παλαιάς Εθνικής Οδού Θεσσαλονίκης - Καβάλας'));
+  ok('Τόπος: Π.Ε.Ο. με τόνους',P('στην 39+370 χ/θ της Π.Ε.Ο. Λάρισας - Βόλου, διαπιστώθηκε').includes('Λάρισας - Βόλου'));
+  ok('Τόπος: 39ο χλμ.',/39ο χλμ\./.test(P('στο 39ο χλμ. της Ε.Ο. Θεσσαλονίκης - Σερρών διαπιστώθηκε')));
+  ok('Τόπος: αστική οδός',P('στην οδό Ταξιαρχών 1, Καλαμαριά').includes('Ταξιαρχών 1'));
+  ok('Τόπος: όχι ΑΜΕΣΑ→Α.Μ.',!P('ΤΜΗΜΑ ΚΑΛΑΜΑΡΙΑΣ προβείτε ΑΜΕΣΑ στην αφαίρεση 39+370 χ/θ').includes('Α.Μ.'));
+  eq('Parser «βεβαιώθηκε την»',OcrParser.toForm(OcrParser.parseDocument('η παράβαση βεβαιώθηκε την 28/09/2026 και ώρα 14:00')).vDate,'2026-09-28');
+  eq('Parser πρόστιμο',OcrParser.toForm(OcrParser.parseDocument('επιβάλλεται διοικητικό πρόστιμο 350 ευρώ')).fine,'350');
+  eq('Parser Απόφαση',OcrParser.toForm(OcrParser.parseDocument('διοικητική απόφαση επιβολής προστίμου')).docType,'Απόφαση');
+  eq('Parser ημέρες αριθμητικά',OcrParser.toForm(OcrParser.parseDocument('αφαίρεση της άδειας ικανότητας οδήγησης για 40 ημέρες')).removalDays,40);
+  const FIX='ΤΜΗΜΑ ΤΡΟΧΑΙΑΣ ΒΟΛΟΥ ΠΡΟΣ ΑΣΤΥΝΟΜΙΚΟ ΤΜΗΜΑ ΚΑΛΑΜΑΡΙΑΣ την υπ\' αριθ. 625300252250 από 28/09/2026 πράξη βεβαίωσης, καθότι ο οδηγός του υπ\' αριθ. ΒΟΟ-5701 Ι.Χ.Ε. αυτοκινήτου με στοιχεία ιδιοκτήτη ΕΥΦΡΑΙΜΙΑΔΗΣ Ευάγγελος του Νικολάου, κάτοικος Καλαμαριάς, οδός Φιλαδελφείας 22, στις 28/09/2026 και ώρα 14:00 στην 39+370 χ/θ της Π.Ε.Ο. Λάρισας - Βόλου διαπιστώθηκε να κινείται με ταχύτητα 88 χ/ω αντί του ανώτατου επιτρεπόμενου ορίου των 50 χ/ω, κατά παράβαση του άρθρου 24ς9αγ. προβείτε ΑΜΕΣΑ στην αφαίρεση της άδειας ικανότητας οδήγησης για τριάντα (30) ημέρες. παρακαλούμε για την εφαρμογή των διατάξεων 169 Π.Κ. (απείθεια).';
+  const pf=OcrParser.toForm(OcrParser.parseDocument(FIX));
+  eq('Parser πινακίδα',pf.plate,'ΒΟΟ5701');
+  eq('Parser άρθρο βασικό',pf.vArticle,'24');
+  eq('Parser ημέρες',pf.removalDays,30);
+  eq('Parser υπηρεσία',pf.service,'Τμήμα Τροχαίας Βόλου');
+  eq('Parser διεύθυνση',pf.address,'Φιλαδελφείας 22');
+  ok('Parser πατρώνυμο',/ΤΟΥ ΝΙΚΟΛΑΟΥ/.test(pf.name||''));
+  ok('Parser 169',pf.endRoute==='complaint');
+  ok('Parser: δεν αγγίζει πρωτόκολλο',pf.protocol===undefined);
+  const full={plate:'ΒΟΟ5701',name:'ΕΥΦΡΑΙΜΙΑΔΗΣ ΕΥΑΓΓΕΛΟΣ ΤΟΥ ΝΙΚΟΛΑΟΥ',protocol:'2515/11-26/451',address:'Φιλαδελφείας 22',service:'ΤΤ ΒΟΛΟΥ',vDate:'2026-09-28',vPlace:'39+370 χ/θ',vArticle:'24'};
+  eq('Πρόσκληση: πλήρης → 0 ελλείψεις',inviteMissing(full).length,0);
+  ok('Πρόσκληση: χωρίς πρωτόκολλο μπλοκάρει',inviteMissing({...full,protocol:''}).length>0);
+  ok('Πρόσκληση: χωρίς πατρώνυμο επισημαίνεται',inviteMissing({...full,name:'ΕΥΦΡΑΙΜΙΑΔΗΣ ΕΥΑΓΓΕΛΟΣ'}).some(x=>/Πατρώνυμο/.test(x)));
+  eq('Word υπηρεσία τονισμένα',docService('ΤΜΗΜΑ ΤΡΟΧΑΙΑΣ ΘΕΡΜΗΣ'),'Τμήμα Τροχαίας Θέρμης');
+  const dx=buildInviteDocx(full,1,'2026-11-27');
+  ok('Word ZIP',dx[0]===0x50&&dx[1]===0x4b&&dx[2]===3&&dx[3]===4);
+  eq('Word CRC32',crc32(u8s('123456789')),0xCBF43926);
+  const rt=JSON.parse(JSON.stringify(cases)).map(migrate);
+  eq('Round-trip πλήθος',rt.length,cases.length);
+  ok('Round-trip ημέρες',rt.every((c,i)=>c.removalDays===cases[i].removalDays));
+  ok('Round-trip προς αφαίρεση',rt.every((c,i)=>c.removalWhat===cases[i].removalWhat));
+  const p=R.filter(r=>r.pass).length;
+  $('#diagSum').textContent=p+'/'+R.length+' επιτυχημένα'+(p===R.length?' ✓':' — ΠΡΟΒΛΗΜΑ');
+  $('#diagOut').innerHTML=R.map(r=>`<div class="${r.pass?'ok':'fail'}">${r.pass?'✓':'✕'} ${esc(r.name)}${r.detail?' — '+esc(r.detail):''}</div>`).join('');
+  return p===R.length;}
+
+/* ---------- init ---------- */
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+loadViews();load();render();
+try{console.log('Αυτοέλεγχος:',runDiagnostics()?'OK':'FAIL');}catch(e){console.error('Σφάλμα αυτοελέγχου',e);}
+let lastDay=todayStr();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){lastDay=todayStr();tick();render();}});
+setInterval(()=>{if(todayStr()!==lastDay){lastDay=todayStr();tick();render();}},60000);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['#violSug','#svcSug','#oosSug'].forEach(s=>$(s).hidden=true);});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+})();
